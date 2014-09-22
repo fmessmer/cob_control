@@ -94,6 +94,7 @@ include_directories(${orocos_kdl_INCLUDE_DIRS})
 
 ## Declare a cpp library
 add_library(${PROJECT_NAME} src/cob_twist_controller.cpp )
+add_dependencies(${PROJECT_NAME} brics_actuator_gencpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 
 ## Declare a cpp executable
