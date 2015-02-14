@@ -53,11 +53,14 @@ public:
 	double update_rate_;
 	ros::Time last_update_;
 	
+	double max_command_silence_;
+	
 	unsigned int dof_;
 	std::vector<std::string> joints_;
 	
 	std::vector<double> current_pos_;
 	std::vector<double> current_vel_;
+	std::vector<double> current_eff_;
 	
 	ros::Subscriber command_vel_sub_;
 	ros::Publisher jointstate_pub_;

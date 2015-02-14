@@ -40,17 +40,18 @@ bool CobLookatDriver::initialize()
 	}
 	dof_ = joints_.size();
 	
-	
-	current_pos_.resize(dof_, 0.0);
+	current_pos_.assign(dof_, 0.0);
 	current_pos_[0] = 1.0;	//this is in order to see the frame
-	current_vel_.resize(dof_, 0.0);
+	current_vel_.assign(dof_, 0.0);
+	current_eff_.assign(dof_, 0.0);
 	
-	if (nh_.hasParam("update_rate"))
-	{	nh_.getParam("update_rate", update_rate_);	}
-	else
-	{	update_rate_ = 68.0;	}
+	if (!nh_.getParam("update_rate", update_rate_))
+	{	update_rate_ = 50.0;	}
 	
-	command_vel_sub_ = nh_.subscribe("command_vel", 1, &CobLookatDriver::command_vel_cb, this);
+	if (!nh_.getParam("max_command_silence", max_command_silence_))
+	{	max_command_silence_ = 0.3;	}
+	
+	command_vel_sub_ = nh_.subscribe("joint_group_velocity_controller/command", 1, &CobLookatDriver::command_vel_cb, this);
 	jointstate_pub_ = nh_.advertise<sensor_msgs::JointState> ("joint_states", 1);
 	
 	ROS_INFO("...initialized!");
@@ -76,6 +77,10 @@ void CobLookatDriver::update_state()
 	
 	for(unsigned int i=0; i<dof_; i++)
 		current_pos_[i] += current_vel_[i]*dt;
+	
+	// max_vel_silence_time - stopping
+	if(dt>max_command_silence_)
+		current_vel_.assign(dof_, 0.0);
 }
 
 
@@ -84,13 +89,10 @@ void CobLookatDriver::publish_state()
 {
 	sensor_msgs::JointState msg;
 	msg.header.stamp = ros::Time::now();
-	for(unsigned int i=0; i<dof_; i++)
-	{
-		msg.name.push_back(joints_[i]);
-		msg.position.push_back(current_pos_[i]);
-		msg.velocity.push_back(current_vel_[i]);
-		msg.effort.push_back(0.0);
-	}
+	msg.name = joints_;
+	msg.position = current_pos_;
+	msg.velocity = current_vel_;
+	msg.effort = current_eff_;
 	
 	jointstate_pub_.publish(msg);
 }
