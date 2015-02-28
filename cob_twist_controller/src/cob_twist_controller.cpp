@@ -143,7 +143,8 @@ bool CobTwistController::initialize()
 	twist_sub = nh_twist.subscribe("command_twist", 1, &CobTwistController::twist_cb, this);
 	twist_stamped_sub = nh_twist.subscribe("command_twist_stamped", 1, &CobTwistController::twist_stamped_cb, this);
 	vel_pub = nh_.advertise<std_msgs::Float64MultiArray>("joint_group_velocity_controller/command", 1);
-	
+	q_dot_norm_pub = nh_twist.advertise<std_msgs::Float64>("debug/q_dot_norm", 1);	
+
 	odometry_sub = nh_.subscribe("/base/odometry_controller/odometry", 1, &CobTwistController::odometry_cb, this);
 	base_vel_pub = nh_base.advertise<geometry_msgs::Twist>("/base/twist_controller/command", 1);
 	
@@ -350,11 +351,18 @@ void CobTwistController::solve_twist(KDL::Twist twist)
 		}
 		
 		std_msgs::Float64MultiArray vel_msg;
+		double q_dot_norm=0;
+		
 		for(unsigned int i=0; i<dof_; i++)
 		{
 			vel_msg.data.push_back(q_dot_ik(i));
+			q_dot_norm+=q_dot_ik(i)*q_dot_ik(i);
 			//ROS_DEBUG("DesiredVel %d: %f", i, q_dot_ik(i));
 		}
+		
+		std_msgs::Float64 q_dot_norm_msg;
+		q_dot_norm_msg.data=sqrt(q_dot_norm);
+		
 		if(base_active_)
 		{
 			geometry_msgs::Twist base_vel_msg;
@@ -395,6 +403,7 @@ void CobTwistController::solve_twist(KDL::Twist twist)
 		
 		}
 		vel_pub.publish(vel_msg);
+		q_dot_norm_pub.publish(q_dot_norm_msg);
 	}
 }
 

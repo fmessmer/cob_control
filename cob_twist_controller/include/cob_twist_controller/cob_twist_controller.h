@@ -72,6 +72,7 @@ private:
 	ros::Publisher base_vel_pub;
 	ros::Publisher twist_pub_;
 	ros::Publisher twist_current_pub_;
+	ros::Publisher q_dot_norm_pub;
 	
 	KDL::Chain chain_;
 	std::string chain_base_link_;

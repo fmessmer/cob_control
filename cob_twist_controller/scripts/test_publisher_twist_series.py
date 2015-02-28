@@ -8,11 +8,11 @@ def twistPub():
   
   pub = rospy.Publisher("twist_controller/command_twist_stamped", TwistStamped, queue_size=1)
   
-  rospy.sleep(1.0)
+  rospy.sleep(3.0)
   
   twist_msg =  TwistStamped()
   twist_msg.header.stamp = rospy.Time.now()
-  twist_msg.header.frame_id = "arm_left_base_link"
+  twist_msg.header.frame_id = "arm_base_link"
   twist_msg.twist.linear.x = 0
   twist_msg.twist.linear.y = 0
   twist_msg.twist.linear.z = 0
@@ -25,21 +25,21 @@ def twistPub():
   
   for i in range(0, 5*rate, 1):
     twist_msg.header.stamp = rospy.Time.now()
-    twist_msg.header.frame_id = "arm_left_base_link"
-    twist_msg.twist.linear.x = 0
+    twist_msg.header.frame_id = "arm_base_link"
+    twist_msg.twist.linear.x = -0.05
     twist_msg.twist.linear.y = 0
-    twist_msg.twist.linear.z = -0.02
+    twist_msg.twist.linear.z = -0.03
     twist_msg.twist.angular.x = 0
     twist_msg.twist.angular.y = 0
     twist_msg.twist.angular.z = 0
     pub.publish(twist_msg)
     r.sleep()
   
-  #pause
-  for i in range(0, 1*rate, 1):
+ 
+  for i in range(0, 3*rate, 1):
     twist_msg.header.stamp = rospy.Time.now()
-    twist_msg.header.frame_id = "arm_left_base_link"
-    twist_msg.twist.linear.x = 0
+    twist_msg.header.frame_id = "arm_base_link"
+    twist_msg.twist.linear.x = 0.07
     twist_msg.twist.linear.y = 0
     twist_msg.twist.linear.z = 0
     twist_msg.twist.angular.x = 0
@@ -48,30 +48,18 @@ def twistPub():
     pub.publish(twist_msg)
     r.sleep()
 
-  for i in range(0, 5*rate, 1):
+  for i in range(0, 7*rate, 1):
     twist_msg.header.stamp = rospy.Time.now()
-    twist_msg.header.frame_id = "arm_left_base_link"
+    twist_msg.header.frame_id = "arm_base_link"
     twist_msg.twist.linear.x = 0
     twist_msg.twist.linear.y = 0
-    twist_msg.twist.linear.z = 0.02
+    twist_msg.twist.linear.z = 0.05
     twist_msg.twist.angular.x = 0
     twist_msg.twist.angular.y = 0
     twist_msg.twist.angular.z = 0
     pub.publish(twist_msg)
     r.sleep()
-
-  #pause
-  for i in range(0, 1*rate, 1):
-    twist_msg.header.stamp = rospy.Time.now()
-    twist_msg.header.frame_id = "arm_left_base_link"
-    twist_msg.twist.linear.x = 0
-    twist_msg.twist.linear.y = 0
-    twist_msg.twist.linear.z = 0
-    twist_msg.twist.angular.x = 0
-    twist_msg.twist.angular.y = 0
-    twist_msg.twist.angular.z = 0
-    pub.publish(twist_msg)
-    r.sleep()
+  
   
   print "done"
 
