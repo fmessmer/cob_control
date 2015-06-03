@@ -138,6 +138,8 @@ bool CobTwistController::initialize()
     jointstate_sub = nh_.subscribe("joint_states", 1, &CobTwistController::jointstate_cb, this);
     twist_sub = nh_twist.subscribe("command_twist", 1, &CobTwistController::twist_cb, this);
     twist_stamped_sub = nh_twist.subscribe("command_twist_stamped", 1, &CobTwistController::twist_stamped_cb, this);
+    error_sub_ = nh_twist.subscribe("command_errors", 1, &CobTwistController::twist_errors_cb, this);
+
     vel_pub = nh_.advertise<std_msgs::Float64MultiArray>("joint_group_velocity_controller/command", 1);
 
     odometry_sub = nh_.subscribe("/base/odometry_controller/odometry", 1, &CobTwistController::odometry_cb, this);
@@ -145,7 +147,6 @@ bool CobTwistController::initialize()
 
 
     /// Debug
-    twist_current_pub_ = nh_twist.advertise<geometry_msgs::Twist> ("debug/twist_current", 1);
     #if DEBUG_BASE_COMP == 1
         debug_base_compensation_visual_tip_pub_ = nh_twist.advertise<visualization_msgs::Marker>( "debug/vis_tip", 0 );
         debug_base_compensation_visual_base_pub_ = nh_twist.advertise<visualization_msgs::Marker>( "debug/vis_base", 0 );
@@ -175,20 +176,23 @@ void CobTwistController::reconfigure_callback(cob_twist_controller::TwistControl
 {
     AugmentedSolverParams params;
     params.damping_method = static_cast<DampingMethodTypes>(config.damping_method);
-    params.constraint = static_cast<ContraintTypes>(config.constraint);
-    params.eps = config.eps;
+    params.numerical_filtering = config.numerical_filtering;
     params.damping_factor = config.damping_factor;
-    params.lambda0 = config.lambda0;
-    params.wt = config.wt;
+    params.lambda_max = config.lambda_max;
+    params.w_threshold = config.w_threshold;
+    params.beta = config.beta;
+    params.eps_damping = config.eps_damping;
+    params.constraint = static_cast<ContraintTypes>(config.constraint);
+    params.eps_truncation = config.eps_truncation;
+    params.p_gain = config.p_gain;
     params.base_compensation = config.base_compensation;
     params.base_active = config.base_active;
     params.base_ratio = config.base_ratio;
-
     params.limits_min = twistControllerParams_.limits_min; // from cob_twist_controller init
     params.limits_max = twistControllerParams_.limits_max; // from cob_twist_controller init
 
-    reset_markers_ = config.reset_markers;
 
+    reset_markers_ = config.reset_markers;
 
     twistControllerParams_.enforce_pos_limits = config.enforce_pos_limits;
     twistControllerParams_.enforce_vel_limits = config.enforce_vel_limits;
@@ -219,15 +223,16 @@ void CobTwistController::initAugmentedSolverParams()
     AugmentedSolverParams params;
     params.damping_method = MANIPULABILITY;
     params.constraint = WLN_JLA;
-    params.eps = 0.001;
+    params.eps_truncation = 0.001;
     params.damping_factor = 0.2;
-    params.lambda0 = 0.1;
-    params.wt = 0.005;
+    params.lambda_max = 0.1;
+    params.w_threshold = 0.005;
     params.base_compensation = false;
     params.base_active = false;
     params.base_ratio = 0.0;
     params.limits_min = twistControllerParams_.limits_min;
     params.limits_max = twistControllerParams_.limits_max;
+    params.p_gain = 0.0;
 
     p_augmented_solver_->SetAugmentedSolverParams(params);
 }
@@ -244,6 +249,7 @@ void CobTwistController::run()
 /// Orientation of twist_stamped_msg is with respect to coordinate system given in header.frame_id
 void CobTwistController::twist_stamped_cb(const geometry_msgs::TwistStamped::ConstPtr& msg)
 {
+    boost::mutex::scoped_lock lock(lock_tracking_errors);
     tf::StampedTransform transform_tf;
     KDL::Frame frame;
     KDL::Twist twist, twist_transformed;
@@ -268,12 +274,33 @@ void CobTwistController::twist_stamped_cb(const geometry_msgs::TwistStamped::Con
     solve_twist(twist_transformed);
 }
 
+
+void CobTwistController::twist_errors_cb(const std_msgs::Float64MultiArray::ConstPtr& msg)
+{
+    boost::mutex::scoped_lock lock(lock_tracking_errors);
+    if(msg->data.size() != tracking_err_.rows())
+    {
+        ROS_ERROR("Size does not match! Stopping! Expected: %d, but got %d",
+                  static_cast<unsigned int>(tracking_err_.rows()),
+                  static_cast<unsigned int>(msg->data.size()));
+        tracking_err_ = Eigen::VectorXd::Zero(6);
+        return;
+    }
+
+    for(unsigned int i = 0; i < msg->data.size(); ++i)
+    {
+        tracking_err_(i) = msg->data[i];
+    }
+}
+
+
+
 /// Orientation of twist_msg is with respect to chain_base coordinate system
 void CobTwistController::twist_cb(const geometry_msgs::Twist::ConstPtr& msg)
 {
+    boost::mutex::scoped_lock lock(lock_tracking_errors);
     KDL::Twist twist;
     tf::twistMsgToKDL(*msg, twist);
-
     solve_twist(twist);
 }
 
@@ -346,7 +373,7 @@ void CobTwistController::solve_twist(KDL::Twist twist)
         cb_frame_bl.M = KDL::Rotation::Quaternion(cb_transform_bl.getRotation().x(), cb_transform_bl.getRotation().y(), cb_transform_bl.getRotation().z(), cb_transform_bl.getRotation().w());
 
         //Solve twist
-        ret_ik = p_augmented_solver_->CartToJnt(last_q_, last_q_dot_, twist, bl_frame_ct, cb_frame_bl, q_dot_ik);
+        ret_ik = p_augmented_solver_->CartToJnt(last_q_, last_q_dot_, twist, bl_frame_ct, cb_frame_bl, tracking_err_, q_dot_ik);
     }
 
     if(twistControllerParams_.base_compensation)
@@ -372,7 +399,7 @@ void CobTwistController::solve_twist(KDL::Twist twist)
 
     if(!twistControllerParams_.base_active)
     {
-        ret_ik = p_augmented_solver_->CartToJnt(last_q_, last_q_dot_, twist, q_dot_ik);
+        ret_ik = p_augmented_solver_->CartToJnt(last_q_, last_q_dot_, twist, tracking_err_, q_dot_ik);
     }
 
     if(0 != ret_ik)
@@ -397,7 +424,6 @@ void CobTwistController::solve_twist(KDL::Twist twist)
             base_vel_msg.linear.x = q_dot_ik(twistControllerParams_.dof);
             base_vel_msg.linear.y = q_dot_ik(twistControllerParams_.dof + 1);
             base_vel_msg.angular.z = q_dot_ik(twistControllerParams_.dof + 2);
-
             base_vel_pub.publish(base_vel_msg);
 
             #if DEBUG_BASE_ACTIVE == 1

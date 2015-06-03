@@ -34,11 +34,12 @@
 class DampingBase
 {
     public:
-        virtual double get_damping_factor() const = 0;
-        virtual ~DampingBase() = 0;
+        virtual double get_damping_factor(const Eigen::VectorXd &sortedSingularValues) const = 0;
+
+        virtual ~DampingBase() {}
 
     protected:
-        DampingBase(AugmentedSolverParams &asParams, Matrix6Xd &jacobianData);
+        DampingBase(AugmentedSolverParams &asParams, Matrix6Xd &jacobianData) : asParams_(asParams), jacobianData_(jacobianData) { }
 
         const AugmentedSolverParams &asParams_;
         const Matrix6Xd &jacobianData_;

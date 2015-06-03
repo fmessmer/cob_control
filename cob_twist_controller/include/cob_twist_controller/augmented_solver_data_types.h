@@ -38,6 +38,7 @@ enum DampingMethodTypes {
     NONE = 0,
     CONSTANT = 1,
     MANIPULABILITY = 2,
+    LSV = 3,
 };
 
 enum ContraintTypes {
@@ -48,11 +49,15 @@ enum ContraintTypes {
 
 struct AugmentedSolverParams {
     DampingMethodTypes damping_method;
-    ContraintTypes constraint;
-    double eps;
+    bool numerical_filtering;
     double damping_factor;
-    double lambda0;
-    double wt;
+    double lambda_max;
+    double w_threshold;
+    double beta;
+    double eps_damping;
+    ContraintTypes constraint;
+    double eps_truncation;
+    double p_gain;
     bool base_compensation;
     bool base_active;
     double base_ratio;
@@ -61,6 +66,8 @@ struct AugmentedSolverParams {
     std::vector<double> limits_max;
     std::vector<double> limits_min;
 };
+
+const double DAMPING_LIMIT = 1.0e-12; ///< const. value for zero comparison with damping factor
 
 typedef Eigen::Matrix<double,6,Eigen::Dynamic> Matrix6Xd;
 

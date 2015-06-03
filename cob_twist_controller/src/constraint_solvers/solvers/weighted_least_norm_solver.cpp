@@ -26,7 +26,6 @@
  *   Special constraint: Avoid joint limits.
  *
  ****************************************************************/
-#include "ros/ros.h"
 #include "cob_twist_controller/constraint_solvers/solvers/weighted_least_norm_solver.h"
 
 
@@ -35,7 +34,10 @@
  * This is done by calculation of a weighting which is dependent on inherited classes for the Jacobian.
  * Uses the base implementation of calculatePinvJacobianBySVD to calculate the pseudo-inverse (weighted) Jacobian.
  */
-Eigen::MatrixXd WeightedLeastNormSolver::solve(const Eigen::VectorXd &inCartVelocities, const KDL::JntArray& q, const KDL::JntArray& last_q_dot) const
+Eigen::MatrixXd WeightedLeastNormSolver::solve(const Eigen::VectorXd &inCartVelocities,
+                                               const KDL::JntArray& q,
+                                               const KDL::JntArray& last_q_dot,
+                                               const Eigen::VectorXd &tracking_errors) const
 {
     Eigen::MatrixXd W_WLN = this->calculateWeighting(q, last_q_dot);
     // for the following formulas see Chan paper ISSN 1042-296X [Page 288]
@@ -43,11 +45,10 @@ Eigen::MatrixXd WeightedLeastNormSolver::solve(const Eigen::VectorXd &inCartVelo
     Eigen::MatrixXd inv_root_W_WLN =  root_W_WLN.inverse(); // -> W^(-1/2)
 
     // SVD of JLA weighted Jacobian: Damping will be done later in calculatePinvJacobianBySVD for pseudo-inverse Jacobian with additional truncation etc.
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd(this->jacobianData_ * inv_root_W_WLN,
-                                          Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::MatrixXd weightedJacobianPseudoInverse = this->calculatePinvJacobianBySVD(svd);
+    Eigen::MatrixXd weightedJacobianPseudoInverse = pinvCalc_.calculate(this->asParams_, this->damping_, this->jacobianData_ * inv_root_W_WLN);
+
     // Take care: W^(1/2) * q_dot = weighted_pinv_J * x_dot -> One must consider the weighting!!!
-    Eigen::MatrixXd qdots_out = inv_root_W_WLN * weightedJacobianPseudoInverse * inCartVelocities;
+    Eigen::MatrixXd qdots_out = inv_root_W_WLN * weightedJacobianPseudoInverse * (inCartVelocities - this->asParams_.p_gain * tracking_errors);
     return qdots_out;
 }
 
