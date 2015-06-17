@@ -51,6 +51,11 @@ enum DampingMethodTypes {
     LSV = 3,
 };
 
+enum InterfaceType {
+    VELOCITY = 0,
+    POSITION = 1,
+};
+
 enum ContraintTypes {
     None = 0,
     WLN = 1,
@@ -103,6 +108,9 @@ struct TwistControllerParams {
     bool keep_direction;
     bool enforce_pos_limits;
     bool enforce_vel_limits;
+
+    InterfaceType interface_type;
+
 
     // added limits from URDF file
     std::vector<double> limits_vel;

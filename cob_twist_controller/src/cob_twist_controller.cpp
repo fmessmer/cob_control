@@ -126,6 +126,8 @@ bool CobTwistController::initialize()
         twist_controller_params_.limits_vel.push_back(model.getJoint(joints_[i])->limits->velocity);
         twist_controller_params_.limits_min.push_back(model.getJoint(joints_[i])->limits->lower);
         twist_controller_params_.limits_max.push_back(model.getJoint(joints_[i])->limits->upper);
+
+        ma_.push_back(MovingAverage());
     }
 
     ///initialize configuration control solver
@@ -151,10 +153,12 @@ bool CobTwistController::initialize()
     twist_sub = nh_twist.subscribe("command_twist", 1, &CobTwistController::twistCallback, this);
     twist_stamped_sub = nh_twist.subscribe("command_twist_stamped", 1, &CobTwistController::twistStampedCallback, this);
 
-    vel_pub = nh_.advertise<std_msgs::Float64MultiArray>("joint_group_velocity_controller/command", 1);
+//    vel_pub = nh_.advertise<std_msgs::Float64MultiArray>("joint_group_velocity_controller/command", 1);
+//    pos_pub = nh_.advertise<std_msgs::Float64MultiArray>("joint_group_position_controller/command", 1);
 
     odometry_sub = nh_.subscribe("/base/odometry_controller/odometry", 1, &CobTwistController::odometryCallback, this);
     base_vel_pub = nh_.advertise<geometry_msgs::Twist>("/base/twist_controller/command", 1);
+
 
     /// Debug
     #if DEBUG_BASE_COMP == 1
@@ -182,6 +186,7 @@ bool CobTwistController::initialize()
     this->limiters_.reset(new LimiterContainer(this->twist_controller_params_, this->chain_));
     this->limiters_->init();
 
+    iteration_counter_ = 0;
     ROS_INFO("...initialized!");
     return true;
 }
@@ -241,6 +246,7 @@ void CobTwistController::reconfigureCallback(cob_twist_controller::TwistControll
 
     reset_markers_ = config.reset_markers;
 
+    twist_controller_params_.interface_type = static_cast<InterfaceType>(config.interface_type);
     twist_controller_params_.enforce_pos_limits = config.enforce_pos_limits;
     twist_controller_params_.enforce_vel_limits = config.enforce_vel_limits;
     twist_controller_params_.base_active = config.base_active;
@@ -305,9 +311,11 @@ void CobTwistController::run()
 /// Orientation of twist_stamped_msg is with respect to coordinate system given in header.frame_id
 void CobTwistController::twistStampedCallback(const geometry_msgs::TwistStamped::ConstPtr& msg)
 {
+
     tf::StampedTransform transform_tf;
     KDL::Frame frame;
     KDL::Twist twist, twist_transformed;
+
     try{
         tf_listener_.lookupTransform(chain_base_link_, msg->header.frame_id, ros::Time(0), transform_tf);
         frame.M = KDL::Rotation::Quaternion(transform_tf.getRotation().x(), transform_tf.getRotation().y(), transform_tf.getRotation().z(), transform_tf.getRotation().w());
@@ -321,7 +329,6 @@ void CobTwistController::twistStampedCallback(const geometry_msgs::TwistStamped:
     twist_transformed = frame*twist;
     solveTwist(twist_transformed);
 }
-
 
 /// Orientation of twist_msg is with respect to chain_base coordinate system
 void CobTwistController::twistCallback(const geometry_msgs::Twist::ConstPtr& msg)
@@ -340,6 +347,29 @@ void CobTwistController::solveTwist(KDL::Twist twist)
 
     int ret_ik;
     KDL::JntArray q_dot_ik(chain_.getNrOfJoints());
+
+    if(firstIteration_)
+    {
+        time_now_ = ros::Time::now();
+        last_update_time_ = time_now_;
+        integration_period_ = time_now_ - last_update_time_;
+    }
+    else
+    {
+        time_now_ = ros::Time::now();
+        integration_period_ = time_now_ - last_update_time_;
+    }
+
+    try
+   {
+       tf_listener_.waitForTransform("base_link",chain_tip_link_, ros::Time(0), ros::Duration(0.5));
+       tf_listener_.lookupTransform("base_link",chain_tip_link_,  ros::Time(0), bl_transform_ct);
+   }
+   catch (tf::TransformException &ex)
+   {
+       ROS_ERROR("%s",ex.what());
+       return;
+   }
 
     if(twist_controller_params_.base_active)
     {
@@ -383,6 +413,7 @@ void CobTwistController::solveTwist(KDL::Twist twist)
 
         bl_frame_ct.p = KDL::Vector(bl_transform_ct.getOrigin().x(), bl_transform_ct.getOrigin().y(), bl_transform_ct.getOrigin().z());
         bl_frame_ct.M = KDL::Rotation::Quaternion(bl_transform_ct.getRotation().x(), bl_transform_ct.getRotation().y(), bl_transform_ct.getRotation().z(), bl_transform_ct.getRotation().w());
+
 
         try
         {
@@ -435,11 +466,48 @@ void CobTwistController::solveTwist(KDL::Twist twist)
     {
         q_dot_ik = this->limiters_->enforceLimits(q_dot_ik, last_q_);
 
-        std_msgs::Float64MultiArray vel_msg;
+        std_msgs::Float64MultiArray vel_msg,pos_msg;
+
         for(unsigned int i=0; i < twist_controller_params_.dof; i++)
         {
             vel_msg.data.push_back(q_dot_ik(i));
             //ROS_DEBUG("DesiredVel %d: %f", i, q_dot_ik(i));
+            ROS_INFO("vel_msg[%i]: %f",i,vel_msg.data[i]);
+
+            if(firstIteration_)
+            {
+                pos_msg.data.push_back(0);
+                old_vel_.push_back(0);
+            }
+            else
+            {
+                if(!initial_pos_.empty())
+                {
+                    // Euler
+//                    ma_[i].add_element(integration_period_.toSec() * vel_msg.data[i] + initial_pos_[i]);
+
+                    // Trapez
+//                    ma_[i].add_element(integration_period_.toSec() * (old_vel_[i]+old_vel_[i]+vel_msg.data[i]) / 2 + initial_pos_[i]);
+
+                    // Simpson
+                    if(iteration_counter_>1)
+                    {
+                        ma_[i].add_element(integration_period_.toSec()/6 * (old_vel_2_[i]+ 4* (old_vel_2_[i] + old_vel_[i]) + old_vel_2_[i] + old_vel_[i] + vel_msg.data[i]) + initial_pos_[i]);
+//                        pos_msg.data.push_back(ma_[i].calc_moving_average());
+                        pos_msg.data.push_back(ma_[i].calc_weighted_moving_average());
+//                        pos_msg.data.push_back(integration_period_.toSec()/6 * (old_vel_2_[i]+ 4* (old_vel_2_[i] + old_vel_[i]) + old_vel_2_[i] + old_vel_[i] + vel_msg.data[i]) + initial_pos_[i]);
+                    }
+
+//                    pos_msg.data.push_back(ma_[i].calc_moving_average());
+//                    pos_msg.data.push_back(ma_[i].calc_weighted_moving_average());
+
+                    last_update_time_ = time_now_;
+                }
+                else
+                {
+                    ROS_ERROR("Initial Position vector empty!");
+                }
+            }
         }
 
         if(twist_controller_params_.base_active)
@@ -478,11 +546,71 @@ void CobTwistController::solveTwist(KDL::Twist twist)
                 tf::twistKDLToMsg(twist_base_bl+twist_manipulator_bl,twist_combined_msg);    // Combined twist in base_link
                 debug_twistControllerParams_.base_activetwist_ee_pub_.publish(twist_combined_msg);
             #endif
-
         }
 
-        vel_pub.publish(vel_msg);
+        if(iteration_counter_ == 0)
+        {
+            for(int i=0; i < vel_msg.data.size(); i++)
+            {
+                old_vel_2_.push_back(vel_msg.data[i]);
+            }
+        }
+
+        if(iteration_counter_ == 1)
+        {
+            for(int i=0; i < vel_msg.data.size(); i++)
+            {
+                old_vel_.push_back(vel_msg.data[i]);
+            }
+        }
+
+        if(iteration_counter_>1)
+        {
+            old_vel_2_.clear();
+            for(int i=0; i < old_vel_.size(); i++)
+            {
+                old_vel_2_.push_back(old_vel_[i]);
+            }
+
+            old_vel_.clear();
+            for(int i=0; i < vel_msg.data.size(); i++)
+            {
+                old_vel_.push_back(vel_msg.data[i]);
+            }
+        }
+
+        if(!firstIteration_)
+        {
+            if(twist_controller_params_.interface_type == POSITION)
+            {
+                if(iteration_counter_>1)
+                {
+                    pub = nh_.advertise<std_msgs::Float64MultiArray>("joint_group_position_controller/command", 1);
+                    pub.publish(pos_msg);
+                }
+
+//                pub = nh_.advertise<std_msgs::Float64MultiArray>("joint_group_position_controller/command", 1);
+//                pub.publish(pos_msg);
+//                old_vel_.clear();
+//
+//                for(int i=0; i < vel_msg.data.size(); i++)
+//                {
+//                    old_vel_.push_back(vel_msg.data[i]);
+//                }
+            }
+        }
+
+        if(twist_controller_params_.interface_type == VELOCITY)
+        {
+            pub = nh_.advertise<std_msgs::Float64MultiArray>("joint_group_velocity_controller/command", 1);
+            pub.publish(vel_msg);
+        }
     }
+    if(iteration_counter_<3)
+    {
+        iteration_counter_++;
+    }
+    firstIteration_=false;
 }
 
 
@@ -510,6 +638,12 @@ void CobTwistController::jointstateCallback(const sensor_msgs::JointState::Const
     {
         last_q_ = q_temp;
         last_q_dot_ = q_dot_temp;
+    }
+    initial_pos_.clear();
+
+    for(int i = 0; i< msg->position.size();i++)
+    {
+        initial_pos_.push_back(msg->position[i]);
     }
 }
 
