@@ -16,7 +16,7 @@ generate_dynamic_reconfigure_options(
 # Declare catkin package
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES twist_controller inverse_differential_kinematics_solver damping_methods constraint_solvers limiters
+  LIBRARIES twist_controller interface_types inverse_differential_kinematics_solver damping_methods constraint_solvers limiters
   CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs nav_msgs visualization_msgs cob_obstacle_distance
   DEPENDS eigen
 )
@@ -38,12 +38,14 @@ target_link_libraries(constraint_solvers damping_methods inv_calculations)
 add_library(limiters src/limiters/limiter.cpp)
 target_link_libraries(limiters ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 
+add_library(interface_types src/interface_types/interface_type.cpp)
+
 add_library(inverse_differential_kinematics_solver src/inverse_differential_kinematics_solver.cpp src/callback_data_mediator.cpp)
 target_link_libraries(inverse_differential_kinematics_solver constraint_solvers ${orocos_kdl_LIBRARIES})
 
 add_library(twist_controller src/cob_twist_controller.cpp)
 add_dependencies(inverse_differential_kinematics_solver cob_twist_controller_gencfg)
-target_link_libraries(twist_controller inverse_differential_kinematics_solver limiters ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
+target_link_libraries(twist_controller inverse_differential_kinematics_solver limiters interface_types ${catkin_LIBRARIES} ${orocos_kdl_LIBRARIES})
 
 ## Declare a cpp executable
 add_executable(cob_twist_controller_node src/cob_twist_controller_node.cpp)
@@ -51,7 +53,7 @@ target_link_libraries(cob_twist_controller_node twist_controller ${catkin_LIBRAR
 
 ## Install
 # Mark executables and/or libraries for installation
-install(TARGETS cob_twist_controller_node twist_controller inverse_differential_kinematics_solver constraint_solvers damping_methods limiters inv_calculations
+install(TARGETS cob_twist_controller_node twist_controller inverse_differential_kinematics_solver constraint_solvers damping_methods limiters interface_types inv_calculations
  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

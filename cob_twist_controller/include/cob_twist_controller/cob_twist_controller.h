@@ -58,7 +58,8 @@
 #include "cob_twist_controller/cob_twist_controller_data_types.h"
 #include "cob_twist_controller/limiters/limiter.h"
 #include "cob_twist_controller/callback_data_mediator.h"
-
+#include <cob_twist_controller/moving_average.h>
+#include "cob_twist_controller/interface_types/interface_type.h"
 class CobTwistController
 {
 private:
@@ -67,7 +68,7 @@ private:
 
 
     ros::NodeHandle nh_;
-    ros::Time last_update_time_,time_;
+    ros::Time time_;
     ros::Duration period_;
     ros::Subscriber jointstate_sub;
     ros::Subscriber odometry_sub;
@@ -78,10 +79,11 @@ private:
     ros::Subscriber twist_stamped_sub;
     ros::Subscriber base_sub;
     ros::Publisher vel_pub;
+    ros::Publisher pos_pub;
     ros::Publisher base_vel_pub;
+    ros::Publisher pub;
 
     KDL::Chain chain_;
-
     KDL::Twist twist_odometry_cb_;
     KDL::JntArray last_q_;
     KDL::JntArray last_q_dot_;
@@ -96,6 +98,8 @@ private:
 
     boost::shared_ptr<InverseDifferentialKinematicsSolver> p_inv_diff_kin_solver_;
     boost::shared_ptr<LimiterContainer> limiters_;
+    boost::shared_ptr<InterfaceBase> interface_;
+    boost::shared_ptr<KDL::ChainFkSolverVel_recursive> jntToCartSolver_vel_;
 
     tf::TransformListener tf_listener_;
 
@@ -117,6 +121,9 @@ private:
                bl_frame_ct,
                cb_frame_bl;
 
+    std::vector<MovingAverage> ma_base_vel_smoother_;
+    std::vector<double> old_vel_, old_pos_, initial_pos_, old_vel_2_;
+
     void initInvDiffKinSolverParams();
 
 
@@ -137,9 +144,9 @@ public:
         this->limiters_.reset();
     }
 
+    bool initialize();
     void run();
 
-    bool initialize();
     void reinitServiceRegistration();
 
     void reconfigureCallback(cob_twist_controller::TwistControllerConfig &config, uint32_t level);
