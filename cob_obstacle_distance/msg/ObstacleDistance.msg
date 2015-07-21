@@ -1,3 +1,4 @@
-Header id
+Header header
 float64 distance
-geometry_msgs/Point distance_vector
+geometry_msgs/Vector3 distance_vector
+geometry_msgs/Vector3 collision_pnt_vector
