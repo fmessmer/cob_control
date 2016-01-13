@@ -109,10 +109,13 @@ inline void ControllerInterfaceTrajectory::processResult(const KDL::JntArray& q_
     {
         trajectory_msgs::JointTrajectoryPoint traj_point;
         traj_point.positions = pos;
-        // traj_point.velocities = vel;
-        // traj_point.accelerations.assign(params_.dof, 0.0);
-        // traj_point.effort.assign(params_.dof, 0.0);
-        traj_point.time_from_start = ros::Duration(0.05);  // ToDo: find good value
+//        traj_point.velocities = vel;
+//        traj_point.velocities.assign(params_.dof, 0.0);
+//        traj_point.accelerations = accl;
+//        traj_point.accelerations.assign(params_.dof, 0.0);
+//        traj_point.effort.assign(params_.dof, 0.0);
+
+        traj_point.time_from_start = ros::Duration(0.01);  // ToDo: find good value
 
         trajectory_msgs::JointTrajectory traj_msg;
         traj_msg.header.stamp = ros::Time::now();
@@ -121,6 +124,7 @@ inline void ControllerInterfaceTrajectory::processResult(const KDL::JntArray& q_
 
         /// publish to interface
         pub_.publish(traj_msg);
+
     }
 }
 /* END ControllerInterfaceTrajectory ******************************************************************************************/
