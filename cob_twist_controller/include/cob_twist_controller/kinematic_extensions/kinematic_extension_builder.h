@@ -48,7 +48,7 @@ class KinematicExtensionBuilder
         KinematicExtensionBuilder() {}
         ~KinematicExtensionBuilder() {}
 
-        static KinematicExtensionBase* createKinematicExtension(const TwistControllerParams& params);
+        static std::vector<KinematicExtensionBase*> createKinematicExtensions(const TwistControllerParams& params);
 };
 /* END KinematicExtensionBuilder *******************************************************************************************/
 

@@ -35,8 +35,9 @@
 /**
  * Static builder method to create kinematic extensions based on given parameterization.
  */
-KinematicExtensionBase* KinematicExtensionBuilder::createKinematicExtension(const TwistControllerParams& params)
+std::vector<KinematicExtensionBase*> KinematicExtensionBuilder::createKinematicExtensions(const TwistControllerParams& params)
 {
+    std::vector<KinematicExtensionBase*> v_keb;
     KinematicExtensionBase* keb = NULL;
 
     switch (params.kinematic_extension)
@@ -54,16 +55,20 @@ KinematicExtensionBase* KinematicExtensionBuilder::createKinematicExtension(cons
         case COB_TORSO:
             keb = new KinematicExtensionTorso(params);
             break;
-        case LOOKAT:
-            keb = new KinematicExtensionLookat(params);
-            break;
         default:
             ROS_ERROR("KinematicExtension %d not defined! Using default: 'NO_EXTENSION'!", params.kinematic_extension);
             keb = new KinematicExtensionNone(params);
             break;
     }
 
-    return keb;
+    v_keb.push_back(keb);
+
+    if(params.enable_lookat)
+    {
+        v_keb.push_back(new KinematicExtensionLookat(params));
+    }
+
+    return v_keb;
 }
 /* END KinematicExtensionBuilder *******************************************************************************************/
 

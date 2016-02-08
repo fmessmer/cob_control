@@ -70,8 +70,13 @@ public:
         callback_data_mediator_(data_mediator),
         constraint_solver_factory_(data_mediator, jnt2jac_, fk_solver_vel_, task_stack_controller_)
     {
-        this->kinematic_extension_.reset(KinematicExtensionBuilder::createKinematicExtension(this->params_));
-        this->limiter_params_ = this->kinematic_extension_->adjustLimiterParams(this->limiter_params_);
+        this->kinematic_extensions_ = KinematicExtensionBuilder::createKinematicExtensions(this->params_);
+
+        this->limiter_params_ =  this->params_.limiter_params;
+        for (std::vector< KinematicExtensionBase* >::iterator it = this->kinematic_extensions_.begin(); it != this->kinematic_extensions_.end(); ++it)
+        {
+            this->limiter_params_ = (*it)->adjustLimiterParams(this->limiter_params_);
+        }
 
         this->limiters_.reset(new LimiterContainer(this->limiter_params_));
         this->limiters_->init();
@@ -80,7 +85,7 @@ public:
     virtual ~InverseDifferentialKinematicsSolver()
     {
         this->limiters_.reset();
-        this->kinematic_extension_.reset();
+        this->kinematic_extensions_.clear();
     };
 
     /** CartToJnt for chain using SVD considering KinematicExtensions and various DampingMethods **/
@@ -99,7 +104,7 @@ private:
     LimiterParams limiter_params_;
     CallbackDataMediator& callback_data_mediator_;
     boost::shared_ptr<LimiterContainer> limiters_;
-    boost::shared_ptr<KinematicExtensionBase> kinematic_extension_;
+    std::vector< KinematicExtensionBase* > kinematic_extensions_;
     ConstraintSolverFactory constraint_solver_factory_;
 
     TaskStackController_t task_stack_controller_;

@@ -252,6 +252,7 @@ void CobTwistController::reconfigureCallback(cob_twist_controller::TwistControll
 
     twist_controller_params_.kinematic_extension = static_cast<KinematicExtensionTypes>(config.kinematic_extension);
     twist_controller_params_.extension_ratio = config.extension_ratio;
+    twist_controller_params_.enable_lookat = config.enable_lookat;
 
     this->controller_interface_.reset(ControllerInterfaceBuilder::createControllerInterface(this->nh_, this->twist_controller_params_, this->joint_states_));
 
@@ -403,7 +404,7 @@ void CobTwistController::solveTwist(KDL::Twist twist)
 void CobTwistController::visualizeTwist(KDL::Twist twist)
 {
     std::string tracking_frame = twist_controller_params_.chain_tip_link;
-    if (twist_controller_params_.kinematic_extension == LOOKAT)
+    if (twist_controller_params_.enable_lookat)
     {
         tracking_frame = "lookat_focus_frame";
     }

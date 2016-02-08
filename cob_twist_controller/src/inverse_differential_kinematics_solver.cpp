@@ -47,11 +47,19 @@ int InverseDifferentialKinematicsSolver::CartToJnt(const JointStates& joint_stat
     jnt2jac_.JntToJac(joint_states.current_q_, jac_chain);
     // ROS_INFO_STREAM("jac_chain.rows: " << jac_chain.rows() << ", jac_chain.columns: " << jac_chain.columns());
 
-    JointStates joint_states_full = this->kinematic_extension_->adjustJointStates(joint_states);
+    JointStates joint_states_full = joint_states;
+    for (std::vector< KinematicExtensionBase* >::iterator it = this->kinematic_extensions_.begin(); it != this->kinematic_extensions_.end(); ++it)
+    {
+        joint_states_full = (*it)->adjustJointStates(joint_states_full);
+    }
     // ROS_INFO_STREAM("joint_states_full.current_q_: " << joint_states_full.current_q_.rows());
 
     /// append columns to Jacobian in order to reflect additional DoFs of kinematical extension
-    KDL::Jacobian jac_full = this->kinematic_extension_->adjustJacobian(jac_chain);
+    KDL::Jacobian jac_full = jac_chain;
+    for (std::vector< KinematicExtensionBase* >::iterator it = this->kinematic_extensions_.begin(); it != this->kinematic_extensions_.end(); ++it)
+    {
+        jac_full = (*it)->adjustJacobian(jac_full);
+    }
     // ROS_INFO_STREAM("jac_full.rows: " << jac_full.rows() << ", jac_full.columns: " << jac_full.columns());
 
     Vector6d_t v_in_vec;
@@ -81,8 +89,11 @@ int InverseDifferentialKinematicsSolver::CartToJnt(const JointStates& joint_stat
     //     ROS_INFO_STREAM("i: " << i << ", qdot_out_full: " << qdot_out_full(i));
     // }
 
-    /// process result for kinematical extension
-    this->kinematic_extension_->processResultExtension(qdot_out_full);
+    /// process result for kinematical extension --- REVERSE ORDER!!!
+    for (std::vector< KinematicExtensionBase* >::reverse_iterator rit = this->kinematic_extensions_.rbegin(); rit != this->kinematic_extensions_.rend(); ++rit)
+    {
+        (*rit)->processResultExtension(qdot_out_full);
+    }
 
     /// then qdot_out shut be resized to contain only the chain_qdot_out's again
     for (int i = 0; i < jac_chain.columns(); i++)
@@ -97,8 +108,13 @@ void InverseDifferentialKinematicsSolver::resetAll(TwistControllerParams params)
 {
     this->params_ = params;
 
-    this->kinematic_extension_.reset(KinematicExtensionBuilder::createKinematicExtension(this->params_));
-    this->limiter_params_ = this->kinematic_extension_->adjustLimiterParams(this->params_.limiter_params);
+    this->kinematic_extensions_ = KinematicExtensionBuilder::createKinematicExtensions(this->params_);
+
+    this->limiter_params_ =  this->params_.limiter_params;
+    for (std::vector< KinematicExtensionBase* >::iterator it = this->kinematic_extensions_.begin(); it != this->kinematic_extensions_.end(); ++it)
+    {
+        this->limiter_params_ = (*it)->adjustLimiterParams(this->limiter_params_);
+    }
 
     this->limiters_.reset(new LimiterContainer(this->limiter_params_));
     this->limiters_->init();

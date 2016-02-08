@@ -66,8 +66,7 @@ enum KinematicExtensionTypes
     NO_EXTENSION = cob_twist_controller::TwistController_NO_EXTENSION,
     BASE_COMPENSATION = cob_twist_controller::TwistController_BASE_COMPENSATION,
     BASE_ACTIVE = cob_twist_controller::TwistController_BASE_ACTIVE,
-    COB_TORSO = cob_twist_controller::TwistController_COB_TORSO,
-    LOOKAT = cob_twist_controller::TwistController_LOOKAT
+    COB_TORSO = cob_twist_controller::TwistController_COB_TORSO
 };
 
 enum SolverTypes
@@ -272,6 +271,7 @@ struct TwistControllerParams
     KinematicExtensionTypes kinematic_extension;
     LookatOffset lookat_offset;
     double extension_ratio;
+    bool enable_lookat;
 
     std::vector<std::string> frame_names;
     std::vector<std::string> joints;
