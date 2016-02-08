@@ -68,6 +68,7 @@ ControllerInterfaceBase* ControllerInterfaceBuilder::createControllerInterface(r
 inline void ControllerInterfaceVelocity::processResult(const KDL::JntArray& q_dot_ik,
                                                        const KDL::JntArray& current_q)
 {
+    ROS_WARN_STREAM("Time: " << ros::Time::now());
     std_msgs::Float64MultiArray vel_msg;
 
     for (unsigned int i = 0; i < params_.dof; i++)
@@ -107,20 +108,37 @@ inline void ControllerInterfaceTrajectory::processResult(const KDL::JntArray& q_
 {
     if (updateIntegration(q_dot_ik, current_q))
     {
+        ros::Time now = ros::Time::now();
+        ROS_WARN_STREAM("Time: " << ros::Time::now());
+        ros::Duration period = now - last_update_time_;
+
         trajectory_msgs::JointTrajectoryPoint traj_point;
         traj_point.positions = pos;
         // traj_point.velocities = vel;
-        // traj_point.accelerations.assign(params_.dof, 0.0);
-        // traj_point.effort.assign(params_.dof, 0.0);
-        traj_point.time_from_start = ros::Duration(0.05);  // ToDo: find good value
+        
+        // for(unsigned int i=0; i<accl.size(); i++)
+        // {
+            // 
+        // }
+//        traj_point.velocities.assign(params_.dof, 0.0);
+//        traj_point.accelerations = accl;
+//        traj_point.accelerations.assign(params_.dof, 0.0);
+//        traj_point.effort.assign(params_.dof, 0.0);
 
+        traj_point.time_from_start = ros::Duration(period.toSec());  // Forced time in which the current position has to move to the next position
+        //~ traj_point.time_from_start = ros::Duration(0.1);
+        ROS_WARN_STREAM("period: " << period.toSec());
         trajectory_msgs::JointTrajectory traj_msg;
         traj_msg.header.stamp = ros::Time::now();
+        
         traj_msg.joint_names = params_.joints;
         traj_msg.points.push_back(traj_point);
 
         /// publish to interface
         pub_.publish(traj_msg);
+
+        last_update_time_ = now;
+        last_period_ = period;
     }
 }
 /* END ControllerInterfaceTrajectory ******************************************************************************************/
