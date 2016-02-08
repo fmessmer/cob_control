@@ -50,8 +50,8 @@ class SimpsonIntegrator
             dof_ = dof;
             for (uint8_t i = 0; i < dof_; i++)
             {
-                 ma_.push_back(new MovingAvgSimple_double_t(2));
-//                ma_.push_back(new MovingAvgExponential_double_t(0.5));
+                ma_.push_back(new MovingAvgSimple_double_t(1));
+                //ma_.push_back(new MovingAvgExponential_double_t(0.5));
                 ma_output_.push_back(new MovingAvgSimple_double_t(2));
             }
             last_update_time_ = ros::Time(0.0);
@@ -147,14 +147,16 @@ class SimpsonIntegrator
                 {
                     // Simpson
                     double integration_value = static_cast<double>(period.toSec() / 6.0 * (vel_before_last_[i] + 4.0 * (vel_before_last_[i] + vel_last_[i]) + vel_before_last_[i] + vel_last_[i] + q_dot_ik(i)) + current_q(i));
+                    // double integration_value = static_cast<double>(period.toSec() * q_dot_ik(i) + current_q(i));
                     ma_[i]->addElement(integration_value);
                     double avg = 0.0;
 
-                    if (ma_[i]->calcMovingAverage(avg))
-                    {
-                        pos.push_back(avg);
+                    // if (ma_[i]->calcMovingAverage(avg))
+                    // {
+                        // pos.push_back(avg);
+                        pos.push_back(integration_value);
                         vel.push_back(q_dot_ik(i));
-                    }
+                    // }
                 }
 
                 value_valid = true;
@@ -177,6 +179,9 @@ class SimpsonIntegrator
             for(unsigned int i=0; i < vel.size(); ++i)
             {
                 accl.push_back((vel.at(i) - vel_last_.at(i)) / period.toSec());
+                ROS_INFO("vel(%d): %.8f",i, vel.at(i));
+                ROS_INFO("vel_last(%d): %.8f",i, vel_last_.at(i));
+                ROS_INFO("accl(%d): %.8f",i, accl.at(i));
             }
 
             if (calculate_velocity)
