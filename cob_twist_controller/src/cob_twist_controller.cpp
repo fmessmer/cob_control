@@ -162,6 +162,8 @@ bool CobTwistController::initialize()
     /// give tf_listener some time to fill tf-cache
     ros::Duration(1.0).sleep();
 
+    js_integrator_.reset(new SimpsonIntegrator(twist_controller_params_.dof, twist_controller_params_.integrator_smoothing));
+
     /// initialize ROS interfaces
     obstacle_distance_sub_ = nh_.subscribe("obstacle_distance", 1, &CallbackDataMediator::distancesToObstaclesCallback, &callback_data_mediator_);
     jointstate_sub_ = nh_.subscribe("joint_states", 1, &CobTwistController::jointstateCallback, this);
@@ -206,6 +208,7 @@ void CobTwistController::reinitServiceRegistration()
 void CobTwistController::reconfigureCallback(cob_twist_controller::TwistControllerConfig& config, uint32_t level)
 {
     this->checkSolverAndConstraints(config);
+    twist_controller_params_.open_loop = config.open_loop;
     twist_controller_params_.controller_interface = static_cast<ControllerInterfaceTypes>(config.controller_interface);
     twist_controller_params_.integrator_smoothing = config.integrator_smoothing;
 
@@ -396,6 +399,21 @@ void CobTwistController::solveTwist(KDL::Twist twist)
         this->controller_interface_->processResult(q_dot_ik, this->joint_states_.current_q_);
     }
 
+    if(twist_controller_params_.open_loop)
+    {
+        std::vector<double> pos, vel;
+        if(js_integrator_->updateIntegration(q_dot_ik, this->joint_states_.current_q_, pos, vel))
+        {
+            this->joint_states_.last_q_ = joint_states_.current_q_;
+            this->joint_states_.last_q_dot_ = joint_states_.current_q_dot_;
+            for (unsigned int i = 0; i< pos.size(); i++)
+            {
+                this->joint_states_.current_q_(i) = pos.at(i);
+                this->joint_states_.current_q_dot_(i) = vel.at(i);
+            }
+        }
+    }
+
     end = ros::Time::now();
     // ROS_INFO_STREAM("solveTwist took " << (end-start).toSec() << " seconds");
 }
@@ -491,6 +509,11 @@ void CobTwistController::visualizeTwist(KDL::Twist twist)
 
 void CobTwistController::jointstateCallback(const sensor_msgs::JointState::ConstPtr& msg)
 {
+    if(twist_controller_params_.open_loop)
+    {
+        return;
+    }
+
     KDL::JntArray q_temp = this->joint_states_.current_q_;
     KDL::JntArray q_dot_temp = this->joint_states_.current_q_dot_;
     int count = 0;

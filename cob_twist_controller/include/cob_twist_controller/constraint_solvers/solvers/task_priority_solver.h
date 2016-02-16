@@ -31,7 +31,7 @@
 #define COB_TWIST_CONTROLLER_CONSTRAINT_SOLVERS_SOLVERS_TASK_PRIORITY_SOLVER_H
 
 #include <set>
-#include "ros/ros.h"
+#include <ros/ros.h>
 
 #include "cob_twist_controller/cob_twist_controller_data_types.h"
 #include "cob_twist_controller/constraint_solvers/solvers/constraint_solver_base.h"

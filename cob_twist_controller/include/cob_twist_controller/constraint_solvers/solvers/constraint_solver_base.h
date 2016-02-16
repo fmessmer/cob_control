@@ -34,7 +34,7 @@
 #include <Eigen/Core>
 #include <kdl/jntarray.hpp>
 #include <boost/shared_ptr.hpp>
-#include <cob_twist_controller/inverse_jacobian_calculations/inverse_jacobian_calculation.h>
+#include "cob_twist_controller/inverse_jacobian_calculations/inverse_jacobian_calculation.h"
 #include "cob_twist_controller/damping_methods/damping_base.h"
 #include "cob_twist_controller/constraints/constraint_base.h"
 #include "cob_twist_controller/cob_twist_controller_data_types.h"

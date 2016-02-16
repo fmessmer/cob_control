@@ -31,7 +31,7 @@
 #define COB_TWIST_CONTROLLER_CONTROLLER_INTERFACES_CONTROLLER_INTERFACE_BASE_H
 
 #include <vector>
-#include "ros/ros.h"
+#include <ros/ros.h>
 
 #include "cob_twist_controller/cob_twist_controller_data_types.h"
 #include "cob_twist_controller/utils/simpson_integrator.h"

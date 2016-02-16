@@ -26,7 +26,7 @@
  *   damping methods.
  *
  ****************************************************************/
-#include "ros/ros.h"
+#include <ros/ros.h>
 #include "cob_twist_controller/damping_methods/damping.h"
 
 /* BEGIN DampingBuilder *****************************************************************************************/

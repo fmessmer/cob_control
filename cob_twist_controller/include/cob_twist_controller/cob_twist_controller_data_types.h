@@ -37,7 +37,7 @@
 #include <Eigen/LU>
 #include <kdl/jntarray.hpp>
 #include <kdl/chainjnttojacsolver.hpp>
-#include <cob_twist_controller/TwistControllerConfig.h>
+#include "cob_twist_controller/TwistControllerConfig.h"
 
 #define MAX_CRIT true
 #define MIN_CRIT false
@@ -197,6 +197,7 @@ struct TwistControllerParams
 {
     TwistControllerParams() :
         dof(0),
+        open_loop(false),
         controller_interface(VELOCITY_INTERFACE),
         integrator_smoothing(0.2),
 
@@ -239,6 +240,7 @@ struct TwistControllerParams
     std::string chain_base_link;
     std::string chain_tip_link;
 
+    bool open_loop;
     ControllerInterfaceTypes controller_interface;
     double integrator_smoothing;
 

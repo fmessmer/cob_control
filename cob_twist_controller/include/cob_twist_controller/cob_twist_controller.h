@@ -52,11 +52,12 @@
 
 #include <dynamic_reconfigure/server.h>
 
-#include <cob_twist_controller/TwistControllerConfig.h>
+#include "cob_twist_controller/TwistControllerConfig.h"
 #include "cob_twist_controller/cob_twist_controller_data_types.h"
-#include <cob_twist_controller/inverse_differential_kinematics_solver.h>
+#include "cob_twist_controller/inverse_differential_kinematics_solver.h"
 #include "cob_twist_controller/controller_interfaces/controller_interface.h"
 #include "cob_twist_controller/callback_data_mediator.h"
+#include "cob_twist_controller/utils/simpson_integrator.h"
 
 class CobTwistController
 {
@@ -64,6 +65,7 @@ private:
     ros::NodeHandle nh_;
 
     ros::Subscriber jointstate_sub_;
+    boost::shared_ptr<SimpsonIntegrator> js_integrator_;    // for open-loop control
 
     ros::Subscriber twist_sub_;
     ros::Subscriber twist_stamped_sub_;
