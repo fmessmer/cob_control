@@ -73,7 +73,7 @@ int InverseDifferentialKinematicsSolver::CartToJnt(const JointStates& joint_stat
     // ROS_INFO_STREAM("qdot_out_full.rows: " << qdot_out_full.rows());
 
     /// limiters shut be applied here in order to be able to consider the additional DoFs within "AllLimit", too
-    qdot_out_full = this->limiters_->enforceLimits(qdot_out_full, joint_states_full.current_q_);
+    qdot_out_full = this->limiters_->enforceLimits(qdot_out_full, joint_states_full);
 
     // ROS_INFO_STREAM("qdot_out_full.rows enforced: " << qdot_out_full.rows());
     // for (int i = 0; i < jac_full.columns(); i++)
