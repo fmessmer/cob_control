@@ -404,11 +404,13 @@ void CobTwistController::solveTwist(KDL::Twist twist)
         std::vector<double> pos, vel;
         if(js_integrator_->updateIntegration(q_dot_ik, this->joint_states_.current_q_, pos, vel))
         {
-            this->joint_states_.last_q_ = joint_states_.current_q_;
+            boost::mutex::scoped_lock lock(js_mutex_);
+
+            // this->joint_states_.last_q_ = joint_states_.current_q_;
             this->joint_states_.last_q_dot_ = joint_states_.current_q_dot_;
             for (unsigned int i = 0; i< pos.size(); i++)
             {
-                this->joint_states_.current_q_(i) = pos.at(i);
+                // this->joint_states_.current_q_(i) = pos.at(i);
                 this->joint_states_.current_q_dot_(i) = vel.at(i);
             }
         }
@@ -509,10 +511,10 @@ void CobTwistController::visualizeTwist(KDL::Twist twist)
 
 void CobTwistController::jointstateCallback(const sensor_msgs::JointState::ConstPtr& msg)
 {
-    if(twist_controller_params_.open_loop)
-    {
-        return;
-    }
+    // if(twist_controller_params_.open_loop)
+    // {
+        // return;
+    // }
 
     KDL::JntArray q_temp = this->joint_states_.current_q_;
     KDL::JntArray q_dot_temp = this->joint_states_.current_q_dot_;
@@ -534,6 +536,8 @@ void CobTwistController::jointstateCallback(const sensor_msgs::JointState::Const
 
     if (count == twist_controller_params_.joints.size())
     {
+        boost::mutex::scoped_lock lock(js_mutex_);
+
         this->joint_states_.last_q_ = joint_states_.current_q_;
         this->joint_states_.last_q_dot_ = joint_states_.current_q_dot_;
         this->joint_states_.current_q_ = q_temp;
@@ -586,3 +590,4 @@ void CobTwistController::odometryCallback(const nav_msgs::Odometry::ConstPtr& ms
 
     twist_odometry_cb_ = twist_odometry_transformed_cb;
 }
+
