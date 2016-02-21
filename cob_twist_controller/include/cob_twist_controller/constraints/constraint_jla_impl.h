@@ -113,21 +113,22 @@ void JointLimitAvoidance<T_PARAMS, PRIO>::calculate()
     this->calcPartialValues();
     this->calcDerivativeValue();
 
-    // Compute prediction
-    const double pred_delta_max = std::abs(limit_max - this->jnts_prediction_.q(joint_idx));
-    const double pred_rel_max = std::abs(pred_delta_max / limit_max);
-    const double pred_delta_min = std::abs(this->jnts_prediction_.q(joint_idx) - limit_min);
-    const double pred_rel_min = std::abs(pred_delta_min / limit_min);
-    const double pred_rel_val = pred_rel_max < pred_rel_min ? pred_rel_max : pred_rel_min;
+    // // Compute prediction
+    // const double pred_delta_max = std::abs(limit_max - this->jnts_prediction_.q(joint_idx));
+    // const double pred_rel_max = std::abs(pred_delta_max / limit_max);
+    // const double pred_delta_min = std::abs(this->jnts_prediction_.q(joint_idx) - limit_min);
+    // const double pred_rel_min = std::abs(pred_delta_min / limit_min);
+    // const double pred_rel_val = pred_rel_max < pred_rel_min ? pred_rel_max : pred_rel_min;
 
     const double activation = params.thresholds_jla.activation;
     const double critical = params.thresholds_jla.critical;
 
-    if (this->state_.getCurrent() == CRITICAL && pred_rel_val < rel_val)
-    {
-        ROS_WARN_STREAM(this->getTaskId() << ": Current state is CRITICAL but prediction is smaller than current rel_val -> Stay in CRIT.");
-    }
-    else if (rel_val < critical || pred_rel_val < critical)
+    // if (this->state_.getCurrent() == CRITICAL && pred_rel_val < rel_val)
+    // {
+    //     ROS_WARN_STREAM(this->getTaskId() << ": Current state is CRITICAL but prediction is smaller than current rel_val -> Stay in CRIT.");
+    // }
+    // else if (rel_val < critical || pred_rel_val < critical)
+    if (rel_val < critical)
     {
         this->state_.setState(CRITICAL);  // always highest task -> avoid HW destruction.
     }
@@ -406,29 +407,28 @@ void JointLimitAvoidanceIneq<T_PARAMS, PRIO>::calculate()
     this->calcPartialValues();
     this->calcDerivativeValue();
 
-    // Compute prediction
-    const double pred_delta_max = std::abs(limit_max - this->jnts_prediction_.q(joint_idx));
-    const double pred_rel_max = std::abs(pred_delta_max / limit_max);
-
-    const double pred_delta_min = std::abs(this->jnts_prediction_.q(joint_idx) - limit_min);
-    const double pred_rel_min = std::abs(pred_delta_min / limit_min);
-
-    this->prediction_value_ = pred_rel_max < pred_rel_min ? pred_rel_max : pred_rel_min;
+    // // Compute prediction
+    // const double pred_delta_max = std::abs(limit_max - this->jnts_prediction_.q(joint_idx));
+    // const double pred_rel_max = std::abs(pred_delta_max / limit_max);
+    // const double pred_delta_min = std::abs(this->jnts_prediction_.q(joint_idx) - limit_min);
+    // const double pred_rel_min = std::abs(pred_delta_min / limit_min);
+    // this->prediction_value_ = pred_rel_max < pred_rel_min ? pred_rel_max : pred_rel_min;
 
     double activation = params.thresholds_jla.activation;
     double critical = params.thresholds_jla.critical;
 
-    if (this->state_.getCurrent() == CRITICAL && this->prediction_value_ < rel_val)
+    // if (this->state_.getCurrent() == CRITICAL && this->prediction_value_ < rel_val)
+    // {
+    //    ROS_WARN_STREAM(this->getTaskId() << ": Current state is CRITICAL but prediction is smaller than current rel_val -> Stay in CRIT.");
+    // }
+    // else if (rel_val < critical || this->prediction_value_ < critical)
+    // {
+    //     if (this->prediction_value_ < critical)
+    //     {
+    //         ROS_WARN_STREAM(this->getTaskId() << ": pred_val < critical!!!");
+    //     }
+    if (rel_val < critical)
     {
-        ROS_WARN_STREAM(this->getTaskId() << ": Current state is CRITICAL but prediction is smaller than current rel_val -> Stay in CRIT.");
-    }
-    else if (rel_val < critical || this->prediction_value_ < critical)
-    {
-        if (this->prediction_value_ < critical)
-        {
-            ROS_WARN_STREAM(this->getTaskId() << ": pred_val < critical!!!");
-        }
-
         this->state_.setState(CRITICAL);
     }
     else

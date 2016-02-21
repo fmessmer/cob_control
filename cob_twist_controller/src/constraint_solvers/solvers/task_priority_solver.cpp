@@ -58,12 +58,12 @@ Eigen::MatrixXd TaskPrioritySolver::solve(const Vector6d_t& in_cart_velocities,
 
     KDL::JntArrayVel predict_jnts_vel(joint_states.current_q_.rows());
 
-    // predict next joint states!
-    for (uint8_t i = 0; i < joint_states.current_q_.rows(); ++i)
-    {
-        predict_jnts_vel.q(i) = particular_solution(i, 0) * cycle + joint_states.current_q_(i);
-        predict_jnts_vel.qdot(i) = particular_solution(i, 0);
-    }
+    // // predict next joint states!
+    // for (uint8_t i = 0; i < joint_states.current_q_.rows(); ++i)
+    // {
+    //     predict_jnts_vel.q(i) = particular_solution(i, 0) * cycle + joint_states.current_q_(i);
+    //     predict_jnts_vel.qdot(i) = particular_solution(i, 0);
+    //}
 
     if (this->constraints_.size() > 0)
     {

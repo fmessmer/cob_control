@@ -109,19 +109,20 @@ void CollisionAvoidance<T_PARAMS, PRIO>::calculate()
     this->calcValue();
     this->calcDerivativeValue();
     this->calcPartialValues();
-    this->calcPredictionValue();
+    // this->calcPredictionValue();
 
-    const double pred_min_dist = this->getPredictionValue();
+    // const double pred_min_dist = this->getPredictionValue();
     const double activation = params.thresholds_ca.activation;
     const double critical = params.thresholds_ca.critical;
     const double activation_buffer = params.thresholds_ca.activation_with_buffer;
     const double crit_min_distance = this->getCriticalValue();
 
-    if (this->state_.getCurrent() == CRITICAL && pred_min_dist < crit_min_distance)
-    {
-        ROS_WARN_STREAM(this->getTaskId() << ": Current state is CRITICAL but prediction " << pred_min_dist << " is smaller than current dist " << crit_min_distance << " -> Stay in CRIT.");
-    }
-    else if (crit_min_distance < critical || pred_min_dist < critical)
+    // if (this->state_.getCurrent() == CRITICAL && pred_min_dist < crit_min_distance)
+    // {
+    //     ROS_WARN_STREAM(this->getTaskId() << ": Current state is CRITICAL but prediction " << pred_min_dist << " is smaller than current dist " << crit_min_distance << " -> Stay in CRIT.");
+    // }
+    // else if (crit_min_distance < critical || pred_min_dist < critical)
+    if (crit_min_distance < critical)
     {
         this->state_.setState(CRITICAL);
     }
@@ -372,75 +373,75 @@ void CollisionAvoidance<T_PARAMS, PRIO>::calcPartialValues()
     this->partial_values_ = sum_partial_values;
 }
 
-template <typename T_PARAMS, typename PRIO>
-void CollisionAvoidance<T_PARAMS, PRIO>::calcPredictionValue()
-{
-    const TwistControllerParams& params = this->constraint_params_.tc_params_;
-    this->prediction_value_ = std::numeric_limits<double>::max();
-
-    ros::Time now = ros::Time::now();
-    double cycle = (now - this->last_pred_time_).toSec();
-    this->last_pred_time_ = now;
-
-    std::vector<std::string>::const_iterator str_it = std::find(params.frame_names.begin(),
-                                                                params.frame_names.end(),
-                                                                this->constraint_params_.id_);
-    // ROS_INFO_STREAM("constraint_params_.id_: " << this->constraint_params_.id_);
-
-    if (params.frame_names.end() != str_it)
-    {
-        if (this->constraint_params_.current_distances_.size() > 0)
-        {
-            uint32_t frame_number = (str_it - params.frame_names.begin()) + 1;  // segment nr not index represents frame number
-            KDL::FrameVel frame_vel;
-
-            // ToDo: the fk_solver_vel_ is only initialized for the primary chain - kinematic extensions cannot be considered yet!
-            KDL::JntArrayVel jnts_prediction_chain(params.dof);
-            for (unsigned int i = 0; i < params.dof; i++)
-            {
-                jnts_prediction_chain.q(i) = this->jnts_prediction_.q(i);
-                jnts_prediction_chain.qdot(i) = this->jnts_prediction_.qdot(i);
-            }
-            // ROS_INFO_STREAM("jnts_prediction_chain.q.rows: " << jnts_prediction_chain.q.rows());
-
-            // Calculate prediction for pos and vel
-            int error = this->fk_solver_vel_.JntToCart(this->jnts_prediction_, frame_vel, frame_number);
-            if (error != 0)
-            {
-                ROS_ERROR_STREAM("Could not calculate twist for frame: " << frame_number << ". Error Code: " << error << " (" << this->fk_solver_vel_.strError(error) << ")");
-                ROS_ERROR_STREAM("This is likely due to using a KinematicExtension! The ChainFkSolverVel is configured for the main chain only!");
-                return;
-            }
-            // ROS_INFO_STREAM("Calculated twist for frame: " << frame_number);
-
-            KDL::Twist twist = frame_vel.GetTwist();  // predicted frame twist
-
-            Eigen::Vector3d pred_twist_vel;
-            tf::vectorKDLToEigen(twist.vel, pred_twist_vel);
-
-            Eigen::Vector3d pred_twist_rot;
-            tf::vectorKDLToEigen(twist.rot, pred_twist_rot);
-
-            std::vector<ObstacleDistanceData>::const_iterator it = this->constraint_params_.current_distances_.begin();
-            ObstacleDistanceData critical_data = *it;
-            for ( ; it != this->constraint_params_.current_distances_.end(); ++it)
-            {
-                if (it->min_distance < critical_data.min_distance)
-                {
-                    critical_data = *it;
-                }
-            }
-
-            Eigen::Vector3d delta_pred_vel = pred_twist_vel + pred_twist_rot.cross(critical_data.nearest_point_frame_vector);
-            Eigen::Vector3d pred_pos = critical_data.nearest_point_frame_vector + delta_pred_vel * cycle;
-            this->prediction_value_ = (critical_data.nearest_point_obstacle_vector - pred_pos).norm();
-        }
-    }
-    else
-    {
-        ROS_ERROR_STREAM("Frame ID not found: " << this->constraint_params_.id_);
-    }
-}
+// template <typename T_PARAMS, typename PRIO>
+// void CollisionAvoidance<T_PARAMS, PRIO>::calcPredictionValue()
+// {
+//     const TwistControllerParams& params = this->constraint_params_.tc_params_;
+//     this->prediction_value_ = std::numeric_limits<double>::max();
+// 
+//     ros::Time now = ros::Time::now();
+//     double cycle = (now - this->last_pred_time_).toSec();
+//     this->last_pred_time_ = now;
+// 
+//     std::vector<std::string>::const_iterator str_it = std::find(params.frame_names.begin(),
+//                                                                 params.frame_names.end(),
+//                                                                 this->constraint_params_.id_);
+//     // ROS_INFO_STREAM("constraint_params_.id_: " << this->constraint_params_.id_);
+// 
+//     if (params.frame_names.end() != str_it)
+//     {
+//         if (this->constraint_params_.current_distances_.size() > 0)
+//         {
+//             uint32_t frame_number = (str_it - params.frame_names.begin()) + 1;  // segment nr not index represents frame number
+//             KDL::FrameVel frame_vel;
+// 
+//             // ToDo: the fk_solver_vel_ is only initialized for the primary chain - kinematic extensions cannot be considered yet!
+//             KDL::JntArrayVel jnts_prediction_chain(params.dof);
+//             for (unsigned int i = 0; i < params.dof; i++)
+//             {
+//                 jnts_prediction_chain.q(i) = this->jnts_prediction_.q(i);
+//                 jnts_prediction_chain.qdot(i) = this->jnts_prediction_.qdot(i);
+//             }
+//             // ROS_INFO_STREAM("jnts_prediction_chain.q.rows: " << jnts_prediction_chain.q.rows());
+// 
+//             // Calculate prediction for pos and vel
+//             int error = this->fk_solver_vel_.JntToCart(this->jnts_prediction_, frame_vel, frame_number);
+//             if (error != 0)
+//             {
+//                 ROS_ERROR_STREAM("Could not calculate twist for frame: " << frame_number << ". Error Code: " << error << " (" << this->fk_solver_vel_.strError(error) << ")");
+//                 ROS_ERROR_STREAM("This is likely due to using a KinematicExtension! The ChainFkSolverVel is configured for the main chain only!");
+//                 return;
+//             }
+//             // ROS_INFO_STREAM("Calculated twist for frame: " << frame_number);
+// 
+//             KDL::Twist twist = frame_vel.GetTwist();  // predicted frame twist
+// 
+//             Eigen::Vector3d pred_twist_vel;
+//             tf::vectorKDLToEigen(twist.vel, pred_twist_vel);
+// 
+//             Eigen::Vector3d pred_twist_rot;
+//             tf::vectorKDLToEigen(twist.rot, pred_twist_rot);
+// 
+//             std::vector<ObstacleDistanceData>::const_iterator it = this->constraint_params_.current_distances_.begin();
+//             ObstacleDistanceData critical_data = *it;
+//             for ( ; it != this->constraint_params_.current_distances_.end(); ++it)
+//             {
+//                 if (it->min_distance < critical_data.min_distance)
+//                 {
+//                     critical_data = *it;
+//                 }
+//             }
+// 
+//             Eigen::Vector3d delta_pred_vel = pred_twist_vel + pred_twist_rot.cross(critical_data.nearest_point_frame_vector);
+//             Eigen::Vector3d pred_pos = critical_data.nearest_point_frame_vector + delta_pred_vel * cycle;
+//             this->prediction_value_ = (critical_data.nearest_point_obstacle_vector - pred_pos).norm();
+//         }
+//     }
+//     else
+//     {
+//         ROS_ERROR_STREAM("Frame ID not found: " << this->constraint_params_.id_);
+//     }
+// }
 /* END CollisionAvoidance ***************************************************************************************/
 
 #endif  // COB_TWIST_CONTROLLER_CONSTRAINTS_CONSTRAINT_CA_IMPL_H

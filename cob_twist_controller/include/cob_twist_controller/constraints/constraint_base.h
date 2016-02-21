@@ -99,7 +99,7 @@ class PriorityBase
         virtual double getValue() const = 0;
         virtual double getDerivativeValue() const = 0;
         virtual Eigen::VectorXd getPartialValues() const = 0;
-        virtual double getPredictionValue() const = 0;
+        // virtual double getPredictionValue() const = 0;
 
         virtual double getActivationGain() const = 0;
         virtual double getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution,
@@ -137,10 +137,10 @@ class ConstraintBase : public PriorityBase<PRIO>
           callback_data_mediator_(cbdm),
           value_(0.0),
           derivative_value_(0.0),
-          prediction_value_(std::numeric_limits<double>::max()),
           last_value_(0.0),
-          last_time_(ros::Time::now()),
-          last_pred_time_(ros::Time::now())
+          last_time_(ros::Time::now())
+          // prediction_value_(std::numeric_limits<double>::max()),
+          // last_pred_time_(ros::Time::now())
         {
             this->member_inst_cnt_ = instance_ctr_++;
         }
@@ -183,7 +183,7 @@ class ConstraintBase : public PriorityBase<PRIO>
 
             this->joint_states_ = joint_states;
             this->jacobian_data_ = jacobian_data;
-            this->jnts_prediction_ = joints_prediction;
+            // this->jnts_prediction_ = joints_prediction;
             this->callback_data_mediator_.fill(this->constraint_params_);
             this->calculate();
         }
@@ -205,10 +205,10 @@ class ConstraintBase : public PriorityBase<PRIO>
             return this->partial_values_;
         }
 
-        virtual double getPredictionValue() const
-        {
-            return this->prediction_value_;
-        }
+        // virtual double getPredictionValue() const
+        // {
+        //     return this->prediction_value_;
+        // }
 
         virtual double getActivationGain() const = 0;
         virtual double getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution,
@@ -220,16 +220,16 @@ class ConstraintBase : public PriorityBase<PRIO>
         CallbackDataMediator& callback_data_mediator_;
 
         JointStates joint_states_;
-        KDL::JntArrayVel jnts_prediction_;
+        // KDL::JntArrayVel jnts_prediction_;
         Matrix6Xd_t jacobian_data_;
 
         double value_;
         double derivative_value_;
         Eigen::VectorXd partial_values_;
-        double prediction_value_;
         double last_value_;
         ros::Time last_time_;
-        ros::Time last_pred_time_;
+        // double prediction_value_;
+        // ros::Time last_pred_time_;
 
         uint32_t member_inst_cnt_;
         static uint32_t instance_ctr_;

@@ -56,12 +56,12 @@ Eigen::MatrixXd StackOfTasksSolver::solve(const Vector6d_t& in_cart_velocities,
 
     KDL::JntArrayVel predict_jnts_vel(joint_states.current_q_.rows());
 
-    // predict next joint states!
-    for (int i = 0; i < joint_states.current_q_.rows(); ++i)
-    {
-        predict_jnts_vel.q(i) = particular_solution(i, 0) * cycle + joint_states.current_q_(i);
-        predict_jnts_vel.qdot(i) = particular_solution(i, 0);
-    }
+    // // predict next joint states!
+    // for (int i = 0; i < joint_states.current_q_.rows(); ++i)
+    // {
+    //     predict_jnts_vel.q(i) = particular_solution(i, 0) * cycle + joint_states.current_q_(i);
+    //     predict_jnts_vel.qdot(i) = particular_solution(i, 0);
+    // }
 
     // First iteration: update constraint state and calculate the according GPM weighting (DANGER state)
     double inv_sum_of_prionums = 0.0;
