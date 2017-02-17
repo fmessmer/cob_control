@@ -3,6 +3,9 @@
 #include <controller_interface/multi_interface_controller.h>
 #include <hardware_interface/joint_command_interface.h>
 
+#include <math.h>
+#include <angles/angles.h>
+
 namespace cob_omni_drive_controller
 {
 
@@ -40,7 +43,11 @@ public:
         updateCtrl(time, period);
 
         for (unsigned i=0; i<wheel_commands_.size(); i++){
-            steer_joints_[i].setCommand(wheel_commands_[i].dAngGearSteerRad);
+            double pos_command = wheel_states_[i].dAngGearSteerRad + wheel_commands_[i].dAngGearSteerRadDelta;
+            while(pos_command <= -10*2*M_PI) pos_command += 2*M_PI;
+            while(pos_command >=  10*2*M_PI) pos_command -= 2*M_PI;
+            steer_joints_[i].setCommand(pos_command);
+            //steer_joints_[i].setCommand(wheel_commands_[i].dAngGearSteerRad);
             drive_joints_[i].setCommand(wheel_commands_[i].dVelGearDriveRadS);
         }
 
