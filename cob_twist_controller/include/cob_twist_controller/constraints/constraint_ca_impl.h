@@ -109,19 +109,13 @@ void CollisionAvoidance<T_PARAMS, PRIO>::calculate()
     this->calcValue();
     this->calcDerivativeValue();
     this->calcPartialValues();
-    this->calcPredictionValue();
 
-    const double pred_min_dist = this->getPredictionValue();
     const double activation = params.thresholds_ca.activation;
     const double critical = params.thresholds_ca.critical;
     const double activation_buffer = params.thresholds_ca.activation_with_buffer;
     const double crit_min_distance = this->getCriticalValue();
 
-    if (this->state_.getCurrent() == CRITICAL && pred_min_dist < crit_min_distance)
-    {
-        ROS_WARN_STREAM(this->getTaskId() << ": Current state is CRITICAL but prediction " << pred_min_dist << " is smaller than current dist " << crit_min_distance << " -> Stay in CRIT.");
-    }
-    else if (crit_min_distance < critical || pred_min_dist < critical)
+    if (crit_min_distance < critical)
     {
         this->state_.setState(CRITICAL);
     }
@@ -372,8 +366,66 @@ void CollisionAvoidance<T_PARAMS, PRIO>::calcPartialValues()
     this->partial_values_ = sum_partial_values;
 }
 
+/* END CollisionAvoidance ***************************************************************************************/
+
+/* BEGIN CollisionAvoidancePrediction ***************************************************************************/
+
 template <typename T_PARAMS, typename PRIO>
-void CollisionAvoidance<T_PARAMS, PRIO>::calcPredictionValue()
+std::string CollisionAvoidancePrediction<T_PARAMS, PRIO>::getTaskId() const
+{
+    const std::string frame_id = this->constraint_params_.id_;
+    std::ostringstream oss;
+    oss << this->member_inst_cnt_;
+    oss << "_";
+    oss << frame_id;
+    oss << "_";
+    oss << this->priority_;
+    std::string taskid = "CollisionAvoidancePrediction_" + oss.str();
+    return taskid;
+}
+
+template <typename T_PARAMS, typename PRIO>
+void CollisionAvoidancePrediction<T_PARAMS, PRIO>::calculate()
+{
+    const TwistControllerParams& params = this->constraint_params_.tc_params_;
+
+    this->calcValue();
+    this->calcDerivativeValue();
+    this->calcPartialValues();
+    this->calcPredictionValue();
+
+    const double pred_min_dist = this->getPredictionValue();
+    const double activation = params.thresholds_ca.activation;
+    const double critical = params.thresholds_ca.critical;
+    const double activation_buffer = params.thresholds_ca.activation_with_buffer;
+    const double crit_min_distance = this->getCriticalValue();
+
+    if (this->state_.getCurrent() == CRITICAL && pred_min_dist < crit_min_distance)
+    {
+        ROS_WARN_STREAM(this->getTaskId() << ": Current state is CRITICAL but prediction " << pred_min_dist << " is smaller than current dist " << crit_min_distance << " -> Stay in CRIT.");
+    }
+    else if (crit_min_distance < critical || pred_min_dist < critical)
+    {
+        this->state_.setState(CRITICAL);
+    }
+    else if (crit_min_distance < activation_buffer)
+    {
+        this->state_.setState(DANGER);
+    }
+    else
+    {
+        this->state_.setState(NORMAL);
+    }
+}
+
+template <typename T_PARAMS, typename PRIO>
+ConstraintTypes CollisionAvoidancePrediction<T_PARAMS, PRIO>::getType() const
+{
+    return CA_PRED;
+}
+
+template <typename T_PARAMS, typename PRIO>
+void CollisionAvoidancePrediction<T_PARAMS, PRIO>::calcPredictionValue()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     this->prediction_value_ = std::numeric_limits<double>::max();
@@ -441,6 +493,7 @@ void CollisionAvoidance<T_PARAMS, PRIO>::calcPredictionValue()
         ROS_ERROR_STREAM("Frame ID not found: " << this->constraint_params_.id_);
     }
 }
-/* END CollisionAvoidance ***************************************************************************************/
+/* END CollisionAvoidancePrediction *****************************************************************************/
+
 
 #endif  // COB_TWIST_CONTROLLER_CONSTRAINTS_CONSTRAINT_CA_IMPL_H

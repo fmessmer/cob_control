@@ -91,6 +91,7 @@ enum ConstraintTypes
 {
     None,
     CA,
+    CA_PRED,
     JLA,
     JLA_MID,
     JLA_INEQ,

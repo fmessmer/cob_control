@@ -121,8 +121,6 @@ class CollisionAvoidance : public ConstraintBase<T_PARAMS, PRIO>
         void calcValue();
         void calcDerivativeValue();
         void calcPartialValues();
-        void calcPredictionValue();
-        double getActivationThresholdWithBuffer() const;
 
         KDL::ChainJntToJacSolver& jnt_to_jac_;
         KDL::ChainFkSolverVel_recursive& fk_solver_vel_;
@@ -132,6 +130,32 @@ class CollisionAvoidance : public ConstraintBase<T_PARAMS, PRIO>
         Eigen::MatrixXd task_jacobian_;
 };
 /* END CollisionAvoidance ***************************************************************************************/
+
+/* BEGIN CollisionAvoidancePrediction ***************************************************************************/
+/// Class providing methods that realize a CollisionAvoidance constraint taking prediction into account.
+template <typename T_PARAMS, typename PRIO = uint32_t>
+class CollisionAvoidancePrediction : public CollisionAvoidance<T_PARAMS, PRIO>
+{
+    public:
+        CollisionAvoidancePrediction(PRIO prio,
+                           T_PARAMS constraint_params,
+                           CallbackDataMediator& cbdm,
+                           KDL::ChainJntToJacSolver& jnt_to_jac,
+                           KDL::ChainFkSolverVel_recursive& fk_solver_vel) :
+            CollisionAvoidance<T_PARAMS, PRIO>(prio, constraint_params, cbdm, jnt_to_jac, fk_solver_vel)
+        {}
+
+        virtual ~CollisionAvoidancePrediction() 
+        {}
+
+        virtual std::string getTaskId() const;
+        virtual void calculate();
+
+    private:
+        virtual ConstraintTypes getType() const;
+        void calcPredictionValue();
+};
+/* END CollisionAvoidancePrediction *****************************************************************************/
 
 /* BEGIN JointLimitAvoidance ************************************************************************************/
 /// Class providing methods that realize a JointLimitAvoidance constraint.
