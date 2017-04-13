@@ -50,8 +50,8 @@
 #include "cob_twist_controller/inverse_jacobian_calculations/inverse_jacobian_calculation.h"
 
 /* BEGIN CollisionAvoidance *************************************************************************************/
-template <typename T_PARAMS, typename PRIO>
-Task_t CollisionAvoidance<T_PARAMS, PRIO>::createTask()
+template <typename T_PARAMS>
+Task_t CollisionAvoidance<T_PARAMS>::createTask()
 {
     Task_t task(this->getPriority(),
                 this->getTaskId(),
@@ -65,8 +65,8 @@ Task_t CollisionAvoidance<T_PARAMS, PRIO>::createTask()
     return task;
 }
 
-template <typename T_PARAMS, typename PRIO>
-std::string CollisionAvoidance<T_PARAMS, PRIO>::getTaskId() const
+template <typename T_PARAMS>
+std::string CollisionAvoidance<T_PARAMS>::getTaskId() const
 {
     const std::string frame_id = this->constraint_params_.id_;
     std::ostringstream oss;
@@ -84,8 +84,8 @@ std::string CollisionAvoidance<T_PARAMS, PRIO>::getTaskId() const
  * So the partial values represent a one row task Jacobian.
  * @return Partial values as task Jacobian.
  */
-template <typename T_PARAMS, typename PRIO>
-Eigen::MatrixXd CollisionAvoidance<T_PARAMS, PRIO>::getTaskJacobian() const
+template <typename T_PARAMS>
+Eigen::MatrixXd CollisionAvoidance<T_PARAMS>::getTaskJacobian() const
 {
     return this->task_jacobian_;
 }
@@ -95,14 +95,14 @@ Eigen::MatrixXd CollisionAvoidance<T_PARAMS, PRIO>::getTaskJacobian() const
  * One row task Jacobian <-> One dim derivative.
  * @return The derivative value.
  */
-template <typename T_PARAMS, typename PRIO>
-Eigen::VectorXd CollisionAvoidance<T_PARAMS, PRIO>::getTaskDerivatives() const
+template <typename T_PARAMS>
+Eigen::VectorXd CollisionAvoidance<T_PARAMS>::getTaskDerivatives() const
 {
     return this->derivative_values_;
 }
 
-template <typename T_PARAMS, typename PRIO>
-void CollisionAvoidance<T_PARAMS, PRIO>::calculate()
+template <typename T_PARAMS>
+void CollisionAvoidance<T_PARAMS>::calculate()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
 
@@ -135,8 +135,8 @@ void CollisionAvoidance<T_PARAMS, PRIO>::calculate()
     }
 }
 
-template <typename T_PARAMS, typename PRIO>
-double CollisionAvoidance<T_PARAMS, PRIO>::getActivationGain(double current_cost_func_value) const
+template <typename T_PARAMS>
+double CollisionAvoidance<T_PARAMS>::getActivationGain(double current_cost_func_value) const
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     double activation_gain;
@@ -159,15 +159,15 @@ double CollisionAvoidance<T_PARAMS, PRIO>::getActivationGain(double current_cost
     return activation_gain;
 }
 
-template <typename T_PARAMS, typename PRIO>
-double CollisionAvoidance<T_PARAMS, PRIO>::getActivationGain() const
+template <typename T_PARAMS>
+double CollisionAvoidance<T_PARAMS>::getActivationGain() const
 {
     return 1.0;
 }
 
 /// Returns a value for magnitude
-template <typename T_PARAMS, typename PRIO>
-double CollisionAvoidance<T_PARAMS, PRIO>::getSelfMotionMagnitude(double current_distance_value) const
+template <typename T_PARAMS>
+double CollisionAvoidance<T_PARAMS>::getSelfMotionMagnitude(double current_distance_value) const
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const double activation_with_buffer = params.thresholds_ca.activation_with_buffer;
@@ -190,20 +190,20 @@ double CollisionAvoidance<T_PARAMS, PRIO>::getSelfMotionMagnitude(double current
 }
 
 /// Returns a value for k_H to weight the partial values for e.g. GPM
-template <typename T_PARAMS, typename PRIO>
-double CollisionAvoidance<T_PARAMS, PRIO>::getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution, const Eigen::MatrixXd& homogeneous_solution) const
+template <typename T_PARAMS>
+double CollisionAvoidance<T_PARAMS>::getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution, const Eigen::MatrixXd& homogeneous_solution) const
 {
     return 1.0;
 }
 
-template <typename T_PARAMS, typename PRIO>
-ConstraintTypes CollisionAvoidance<T_PARAMS, PRIO>::getType() const
+template <typename T_PARAMS>
+ConstraintTypes CollisionAvoidance<T_PARAMS>::getType() const
 {
     return CA;
 }
 
-template <typename T_PARAMS, typename PRIO>
-double CollisionAvoidance<T_PARAMS, PRIO>::getCriticalValue() const
+template <typename T_PARAMS>
+double CollisionAvoidance<T_PARAMS>::getCriticalValue() const
 {
     double min_distance = std::numeric_limits<double>::max();
     for (std::vector<ObstacleDistanceData>::const_iterator it = this->constraint_params_.current_distances_.begin();
@@ -219,8 +219,8 @@ double CollisionAvoidance<T_PARAMS, PRIO>::getCriticalValue() const
     return min_distance;
 }
 
-template <typename T_PARAMS, typename PRIO>
-void CollisionAvoidance<T_PARAMS, PRIO>::calcValue()
+template <typename T_PARAMS>
+void CollisionAvoidance<T_PARAMS>::calcValue()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     std::vector<double> relevant_values;
@@ -248,8 +248,8 @@ void CollisionAvoidance<T_PARAMS, PRIO>::calcValue()
     }
 }
 
-template <typename T_PARAMS, typename PRIO>
-void CollisionAvoidance<T_PARAMS, PRIO>::calcDerivativeValue()
+template <typename T_PARAMS>
+void CollisionAvoidance<T_PARAMS>::calcDerivativeValue()
 {
     this->derivative_value_ = -0.1 * this->value_;  // exponential decay experimentally chosen -0.1
     this->derivative_values_ = -0.1 * this->values_;
@@ -261,8 +261,8 @@ void CollisionAvoidance<T_PARAMS, PRIO>::calcDerivativeValue()
  * For task constraint the task Jacobian is created: Each row is the partial value vector of one collision pair.
  * ATTENTION: The magnitude and activation gain are considered only for GPM here.
  */
-template <typename T_PARAMS, typename PRIO>
-void CollisionAvoidance<T_PARAMS, PRIO>::calcPartialValues()
+template <typename T_PARAMS>
+void CollisionAvoidance<T_PARAMS>::calcPartialValues()
 {
     // ROS_INFO_STREAM("CollisionAvoidance::calcPartialValues:");
     Eigen::VectorXd partial_values = Eigen::VectorXd::Zero(this->jacobian_data_.cols());
@@ -372,8 +372,8 @@ void CollisionAvoidance<T_PARAMS, PRIO>::calcPartialValues()
     this->partial_values_ = sum_partial_values;
 }
 
-template <typename T_PARAMS, typename PRIO>
-void CollisionAvoidance<T_PARAMS, PRIO>::calcPredictionValue()
+template <typename T_PARAMS>
+void CollisionAvoidance<T_PARAMS>::calcPredictionValue()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     this->prediction_value_ = std::numeric_limits<double>::max();

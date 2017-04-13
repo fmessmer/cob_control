@@ -10,6 +10,8 @@ add_definitions(${EIGEN_DEFINITIONS})
 
 find_package(orocos_kdl REQUIRED)
 
+add_definitions(-std=c++0x)
+
 catkin_python_setup()
 
 generate_dynamic_reconfigure_options(

@@ -47,53 +47,47 @@
 /**
  * Static builder method to create constraints dependent on parameterization.
  */
-template <typename PRIO>
-std::set<ConstraintBase_t> ConstraintsBuilder<PRIO>::createConstraints(const TwistControllerParams& tc_params,
-                                                                       const LimiterParams& limiter_params,
-                                                                       KDL::ChainJntToJacSolver& jnt_to_jac,
-                                                                       KDL::ChainFkSolverVel_recursive& fk_solver_vel,
-                                                                       CallbackDataMediator& data_mediator)
+std::set<ConstraintBase_t> ConstraintsBuilder::createConstraints(const TwistControllerParams& tc_params,
+                                                                 const LimiterParams& limiter_params,
+                                                                 KDL::ChainJntToJacSolver& jnt_to_jac,
+                                                                 KDL::ChainFkSolverVel_recursive& fk_solver_vel,
+                                                                 CallbackDataMediator& data_mediator)
 {
     std::set<ConstraintBase_t> constraints;
     // Joint limit avoidance part
     if (JLA_ON == tc_params.constraint_jla)
     {
-        typedef JointLimitAvoidance<ConstraintParamsJLA, PRIO> Jla_t;
-
+        typedef JointLimitAvoidance<ConstraintParamsJLA> Jla_t;
         ConstraintParamsJLA params = ConstraintParamFactory<ConstraintParamsJLA>::createConstraintParams(tc_params, limiter_params, data_mediator);
         uint32_t startPrio = tc_params.priority_jla;
         for (uint32_t i = 0; i < tc_params.joints.size(); ++i)
         {
-            // TODO: take care PRIO could be of different type than UINT32
             params.joint_ = tc_params.joints[i];
             params.joint_idx_ = static_cast<int32_t>(i);
             // copy of params will be created; priority increased with each joint.
             boost::shared_ptr<Jla_t > jla(new Jla_t(startPrio++, params, data_mediator));
-            constraints.insert(boost::static_pointer_cast<PriorityBase<PRIO> >(jla));
+            constraints.insert(boost::static_pointer_cast<ConstraintBase<ConstraintParamsJLA> >(jla));
         }
     }
     else if (JLA_MID_ON == tc_params.constraint_jla)
     {
-        // same params as for normal JLA
-        typedef JointLimitAvoidanceMid<ConstraintParamsJLA, PRIO> JlaMid_t;
+        typedef JointLimitAvoidanceMid<ConstraintParamsJLA> JlaMid_t;
         ConstraintParamsJLA params = ConstraintParamFactory<ConstraintParamsJLA>::createConstraintParams(tc_params, limiter_params, data_mediator);
-        // TODO: take care PRIO could be of different type than UINT32
         boost::shared_ptr<JlaMid_t > jla(new JlaMid_t(tc_params.priority_jla, params, data_mediator));
-        constraints.insert(boost::static_pointer_cast<PriorityBase<PRIO> >(jla));
+        constraints.insert(boost::static_pointer_cast<ConstraintBase<ConstraintParamsJLA> >(jla));
     }
     else if (JLA_INEQ_ON == tc_params.constraint_jla)
     {
-        typedef JointLimitAvoidanceIneq<ConstraintParamsJLA, PRIO> Jla_t;
+        typedef JointLimitAvoidanceIneq<ConstraintParamsJLA> Jla_t;
         ConstraintParamsJLA params = ConstraintParamFactory<ConstraintParamsJLA>::createConstraintParams(tc_params, limiter_params, data_mediator);
         uint32_t startPrio = tc_params.priority_jla;
         for (uint32_t i = 0; i < tc_params.joints.size(); ++i)
         {
-            // TODO: take care PRIO could be of different type than UINT32
             params.joint_ = tc_params.joints[i];
             params.joint_idx_ = static_cast<int32_t>(i);
             // copy of params will be created; priority increased with each joint.
             boost::shared_ptr<Jla_t > jla(new Jla_t(startPrio++, params, data_mediator));
-            constraints.insert(boost::static_pointer_cast<PriorityBase<PRIO> >(jla));
+            constraints.insert(boost::static_pointer_cast<ConstraintBase<ConstraintParamsJLA> >(jla));
         }
     }
     else
@@ -104,16 +98,15 @@ std::set<ConstraintBase_t> ConstraintsBuilder<PRIO>::createConstraints(const Twi
     // Collision avoidance part
     if (CA_ON == tc_params.constraint_ca)
     {
-        typedef CollisionAvoidance<ConstraintParamsCA, PRIO> CollisionAvoidance_t;
+        typedef CollisionAvoidance<ConstraintParamsCA> CollisionAvoidance_t;
         uint32_t startPrio = tc_params.priority_ca;
 
         for (std::vector<std::string>::const_iterator it = tc_params.collision_check_links.begin();
              it != tc_params.collision_check_links.end(); it++)
         {
             ConstraintParamsCA params = ConstraintParamFactory<ConstraintParamsCA>::createConstraintParams(tc_params, limiter_params, data_mediator, *it);
-            // TODO: take care PRIO could be of different type than UINT32
             boost::shared_ptr<CollisionAvoidance_t > ca(new CollisionAvoidance_t(startPrio--, params, data_mediator, jnt_to_jac, fk_solver_vel));
-            constraints.insert(boost::static_pointer_cast<PriorityBase<PRIO> >(ca));
+            constraints.insert(boost::static_pointer_cast<ConstraintBase<ConstraintParamsCA> >(ca));
         }
     }
     else

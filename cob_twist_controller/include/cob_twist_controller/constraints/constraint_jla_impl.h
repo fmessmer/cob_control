@@ -50,8 +50,8 @@
 #include <eigen_conversions/eigen_kdl.h>
 
 /* BEGIN JointLimitAvoidance ************************************************************************************/
-template <typename T_PARAMS, typename PRIO>
-Task_t JointLimitAvoidance<T_PARAMS, PRIO>::createTask()
+template <typename T_PARAMS>
+Task_t JointLimitAvoidance<T_PARAMS>::createTask()
 {
     Eigen::MatrixXd cost_func_jac = this->getTaskJacobian();
     Eigen::VectorXd derivs = this->getTaskDerivatives();
@@ -66,8 +66,8 @@ Task_t JointLimitAvoidance<T_PARAMS, PRIO>::createTask()
     return task;
 }
 
-template <typename T_PARAMS, typename PRIO>
-std::string JointLimitAvoidance<T_PARAMS, PRIO>::getTaskId() const
+template <typename T_PARAMS>
+std::string JointLimitAvoidance<T_PARAMS>::getTaskId() const
 {
     std::ostringstream oss;
     oss << this->member_inst_cnt_;
@@ -79,20 +79,20 @@ std::string JointLimitAvoidance<T_PARAMS, PRIO>::getTaskId() const
     return taskid;
 }
 
-template <typename T_PARAMS, typename PRIO>
-Eigen::MatrixXd JointLimitAvoidance<T_PARAMS, PRIO>::getTaskJacobian() const
+template <typename T_PARAMS>
+Eigen::MatrixXd JointLimitAvoidance<T_PARAMS>::getTaskJacobian() const
 {
     return this->partial_values_.transpose();
 }
 
-template <typename T_PARAMS, typename PRIO>
-Eigen::VectorXd JointLimitAvoidance<T_PARAMS, PRIO>::getTaskDerivatives() const
+template <typename T_PARAMS>
+Eigen::VectorXd JointLimitAvoidance<T_PARAMS>::getTaskDerivatives() const
 {
     return Eigen::VectorXd::Identity(1, 1) * this->derivative_value_;
 }
 
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidance<T_PARAMS, PRIO>::calculate()
+template <typename T_PARAMS>
+void JointLimitAvoidance<T_PARAMS>::calculate()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const LimiterParams& limiter_params = this->constraint_params_.limiter_params_;
@@ -137,8 +137,8 @@ void JointLimitAvoidance<T_PARAMS, PRIO>::calculate()
     }
 }
 
-template <typename T_PARAMS, typename PRIO>
-double JointLimitAvoidance<T_PARAMS, PRIO>::getActivationGain() const
+template <typename T_PARAMS>
+double JointLimitAvoidance<T_PARAMS>::getActivationGain() const
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const double activation_threshold = params.thresholds_jla.activation;
@@ -169,23 +169,23 @@ double JointLimitAvoidance<T_PARAMS, PRIO>::getActivationGain() const
 }
 
 /// Returns a value for k_H to weight the partial values for e.g. GPM
-template <typename T_PARAMS, typename PRIO>
-double JointLimitAvoidance<T_PARAMS, PRIO>::getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution, const Eigen::MatrixXd& homogeneous_solution) const
+template <typename T_PARAMS>
+double JointLimitAvoidance<T_PARAMS>::getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution, const Eigen::MatrixXd& homogeneous_solution) const
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     double k_H = params.k_H_jla;
     return k_H;
 }
 
-template <typename T_PARAMS, typename PRIO>
-ConstraintTypes JointLimitAvoidance<T_PARAMS, PRIO>::getType() const
+template <typename T_PARAMS>
+ConstraintTypes JointLimitAvoidance<T_PARAMS>::getType() const
 {
     return JLA;
 }
 
 /// Calculate values of the JLA cost function.
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidance<T_PARAMS, PRIO>::calcValue()
+template <typename T_PARAMS>
+void JointLimitAvoidance<T_PARAMS>::calcValue()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const LimiterParams& limiter_params = this->constraint_params_.limiter_params_;
@@ -202,15 +202,15 @@ void JointLimitAvoidance<T_PARAMS, PRIO>::calcValue()
 }
 
 /// Calculate derivative of values.
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidance<T_PARAMS, PRIO>::calcDerivativeValue()
+template <typename T_PARAMS>
+void JointLimitAvoidance<T_PARAMS>::calcDerivativeValue()
 {
     this->derivative_value_ = -0.1 * this->value_;
 }
 
 /// Calculates values of the gradient of the cost function
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidance<T_PARAMS, PRIO>::calcPartialValues()
+template <typename T_PARAMS>
+void JointLimitAvoidance<T_PARAMS>::calcPartialValues()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const LimiterParams& limiter_params = this->constraint_params_.limiter_params_;
@@ -231,8 +231,8 @@ void JointLimitAvoidance<T_PARAMS, PRIO>::calcPartialValues()
 /* END JointLimitAvoidance **************************************************************************************/
 
 /* BEGIN JointLimitAvoidanceMid ************************************************************************************/
-template <typename T_PARAMS, typename PRIO>
-std::string JointLimitAvoidanceMid<T_PARAMS, PRIO>::getTaskId() const
+template <typename T_PARAMS>
+std::string JointLimitAvoidanceMid<T_PARAMS>::getTaskId() const
 {
     std::ostringstream oss;
     oss << this->member_inst_cnt_;
@@ -242,38 +242,38 @@ std::string JointLimitAvoidanceMid<T_PARAMS, PRIO>::getTaskId() const
     return taskid;
 }
 
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidanceMid<T_PARAMS, PRIO>::calculate()
+template <typename T_PARAMS>
+void JointLimitAvoidanceMid<T_PARAMS>::calculate()
 {
     this->calcValue();
     this->calcDerivativeValue();
     this->calcPartialValues();
 }
 
-template <typename T_PARAMS, typename PRIO>
-double JointLimitAvoidanceMid<T_PARAMS, PRIO>::getActivationGain() const
+template <typename T_PARAMS>
+double JointLimitAvoidanceMid<T_PARAMS>::getActivationGain() const
 {
     return 1.0;
 }
 
 /// Returns a value for k_H to weight the partial values for e.g. GPM
-template <typename T_PARAMS, typename PRIO>
-double JointLimitAvoidanceMid<T_PARAMS, PRIO>::getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution, const Eigen::MatrixXd& homogeneous_solution) const
+template <typename T_PARAMS>
+double JointLimitAvoidanceMid<T_PARAMS>::getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution, const Eigen::MatrixXd& homogeneous_solution) const
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     double k_H = params.k_H_jla;
     return k_H;
 }
 
-template <typename T_PARAMS, typename PRIO>
-ConstraintTypes JointLimitAvoidanceMid<T_PARAMS, PRIO>::getType() const
+template <typename T_PARAMS>
+ConstraintTypes JointLimitAvoidanceMid<T_PARAMS>::getType() const
 {
     return JLA_MID;
 }
 
 /// Calculate values of the JLA cost function.
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidanceMid<T_PARAMS, PRIO>::calcValue()
+template <typename T_PARAMS>
+void JointLimitAvoidanceMid<T_PARAMS>::calcValue()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const LimiterParams& limiter_params = this->constraint_params_.limiter_params_;
@@ -293,8 +293,8 @@ void JointLimitAvoidanceMid<T_PARAMS, PRIO>::calcValue()
 }
 
 /// Calculate derivative of values.
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidanceMid<T_PARAMS, PRIO>::calcDerivativeValue()
+template <typename T_PARAMS>
+void JointLimitAvoidanceMid<T_PARAMS>::calcDerivativeValue()
 {
     ros::Time now = ros::Time::now();
     double cycle = (now - this->last_time_).toSec();
@@ -311,8 +311,8 @@ void JointLimitAvoidanceMid<T_PARAMS, PRIO>::calcDerivativeValue()
 }
 
 /// Calculates values of the gradient of the cost function
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidanceMid<T_PARAMS, PRIO>::calcPartialValues()
+template <typename T_PARAMS>
+void JointLimitAvoidanceMid<T_PARAMS>::calcPartialValues()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const LimiterParams& limiter_params = this->constraint_params_.limiter_params_;
@@ -345,8 +345,8 @@ void JointLimitAvoidanceMid<T_PARAMS, PRIO>::calcPartialValues()
 /* END JointLimitAvoidanceMid ************************************************************************************/
 
 /* BEGIN JointLimitAvoidanceIneq ************************************************************************************/
-template <typename T_PARAMS, typename PRIO>
-Task_t JointLimitAvoidanceIneq<T_PARAMS, PRIO>::createTask()
+template <typename T_PARAMS>
+Task_t JointLimitAvoidanceIneq<T_PARAMS>::createTask()
 {
     Eigen::MatrixXd cost_func_jac = this->getTaskJacobian();
     Eigen::VectorXd derivs = this->getTaskDerivatives();
@@ -361,8 +361,8 @@ Task_t JointLimitAvoidanceIneq<T_PARAMS, PRIO>::createTask()
     return task;
 }
 
-template <typename T_PARAMS, typename PRIO>
-std::string JointLimitAvoidanceIneq<T_PARAMS, PRIO>::getTaskId() const
+template <typename T_PARAMS>
+std::string JointLimitAvoidanceIneq<T_PARAMS>::getTaskId() const
 {
     std::ostringstream oss;
     oss << this->member_inst_cnt_;
@@ -372,20 +372,20 @@ std::string JointLimitAvoidanceIneq<T_PARAMS, PRIO>::getTaskId() const
     return taskid;
 }
 
-template <typename T_PARAMS, typename PRIO>
-Eigen::MatrixXd JointLimitAvoidanceIneq<T_PARAMS, PRIO>::getTaskJacobian() const
+template <typename T_PARAMS>
+Eigen::MatrixXd JointLimitAvoidanceIneq<T_PARAMS>::getTaskJacobian() const
 {
     return this->partial_values_.transpose();
 }
 
-template <typename T_PARAMS, typename PRIO>
-Eigen::VectorXd JointLimitAvoidanceIneq<T_PARAMS, PRIO>::getTaskDerivatives() const
+template <typename T_PARAMS>
+Eigen::VectorXd JointLimitAvoidanceIneq<T_PARAMS>::getTaskDerivatives() const
 {
     return Eigen::VectorXd::Identity(1, 1) * this->derivative_value_;
 }
 
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidanceIneq<T_PARAMS, PRIO>::calculate()
+template <typename T_PARAMS>
+void JointLimitAvoidanceIneq<T_PARAMS>::calculate()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const LimiterParams& limiter_params = this->constraint_params_.limiter_params_;
@@ -437,8 +437,8 @@ void JointLimitAvoidanceIneq<T_PARAMS, PRIO>::calculate()
     }
 }
 
-template <typename T_PARAMS, typename PRIO>
-double JointLimitAvoidanceIneq<T_PARAMS, PRIO>::getActivationGain() const
+template <typename T_PARAMS>
+double JointLimitAvoidanceIneq<T_PARAMS>::getActivationGain() const
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const double activation_threshold = params.thresholds_jla.activation;  // [%]
@@ -478,8 +478,8 @@ double JointLimitAvoidanceIneq<T_PARAMS, PRIO>::getActivationGain() const
 }
 
 /// Returns a value for k_H to weight the partial values for e.g. GPM
-template <typename T_PARAMS, typename PRIO>
-double JointLimitAvoidanceIneq<T_PARAMS, PRIO>::getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution, const Eigen::MatrixXd& homogeneous_solution) const
+template <typename T_PARAMS>
+double JointLimitAvoidanceIneq<T_PARAMS>::getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution, const Eigen::MatrixXd& homogeneous_solution) const
 {
     double factor;
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
@@ -503,15 +503,15 @@ double JointLimitAvoidanceIneq<T_PARAMS, PRIO>::getSelfMotionMagnitude(const Eig
     return k_H;
 }
 
-template <typename T_PARAMS, typename PRIO>
-ConstraintTypes JointLimitAvoidanceIneq<T_PARAMS, PRIO>::getType() const
+template <typename T_PARAMS>
+ConstraintTypes JointLimitAvoidanceIneq<T_PARAMS>::getType() const
 {
     return JLA_INEQ;
 }
 
 /// Calculate values of the JLA cost function.
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidanceIneq<T_PARAMS, PRIO>::calcValue()
+template <typename T_PARAMS>
+void JointLimitAvoidanceIneq<T_PARAMS>::calcValue()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const LimiterParams& limiter_params = this->constraint_params_.limiter_params_;
@@ -526,15 +526,15 @@ void JointLimitAvoidanceIneq<T_PARAMS, PRIO>::calcValue()
 }
 
 /// Simple first order differential equation for exponential increase (move away from limit!)
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidanceIneq<T_PARAMS, PRIO>::calcDerivativeValue()
+template <typename T_PARAMS>
+void JointLimitAvoidanceIneq<T_PARAMS>::calcDerivativeValue()
 {
     this->derivative_value_ = 0.1 * this->value_;
 }
 
 /// Calculates values of the gradient of the cost function
-template <typename T_PARAMS, typename PRIO>
-void JointLimitAvoidanceIneq<T_PARAMS, PRIO>::calcPartialValues()
+template <typename T_PARAMS>
+void JointLimitAvoidanceIneq<T_PARAMS>::calcPartialValues()
 {
     const TwistControllerParams& params = this->constraint_params_.tc_params_;
     const LimiterParams& limiter_params = this->constraint_params_.limiter_params_;

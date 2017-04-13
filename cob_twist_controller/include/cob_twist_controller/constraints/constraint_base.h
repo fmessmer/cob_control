@@ -88,51 +88,29 @@ class PriorityBase
             return static_cast<double>(priority_);
         }
 
-        virtual Task_t createTask() = 0;
-        virtual std::string getTaskId() const = 0;
-        virtual ConstraintState getState() const = 0;
-        virtual Eigen::MatrixXd getTaskJacobian() const = 0;
-        virtual Eigen::VectorXd getTaskDerivatives() const = 0;
-
-        virtual void update(const JointStates& joint_states, const KDL::JntArrayVel& joints_prediction, const Matrix6Xd_t& jacobian_data) = 0;
-        virtual void calculate() = 0;
-        virtual double getValue() const = 0;
-        virtual double getDerivativeValue() const = 0;
-        virtual Eigen::VectorXd getPartialValues() const = 0;
-        virtual double getPredictionValue() const = 0;
-
-        virtual double getActivationGain() const = 0;
-        virtual double getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution,
-                                              const Eigen::MatrixXd& homogeneous_solution) const = 0;
-
     protected:
         PRIO priority_;
-
-        virtual ConstraintTypes getType() const = 0;
-        virtual double getCriticalValue() const = 0;
-        virtual TwistControllerParams adaptDampingParamsForTask(double const_damping_factor) = 0;
 };
 
 
 /**
  * Base class for all derived constraints. Used to represent a common data structure for all concrete constraints.
  * @tparam T_PARAMS A specific constraint parameter class.
- * @tparam PRIO See base class.
  */
 template
-<typename T_PARAMS, typename PRIO = uint32_t>
-class ConstraintBase : public PriorityBase<PRIO>
+<typename T_PARAMS>
+class ConstraintBase
 {
     public:
         /**
-         * @param prio A priority value / object.
+         * @param prio The priority of this constraint.
          * @param q The joint states.
          * @param params The parameters for the constraint to parameterize the calculation of the cost function values.
          */
-        ConstraintBase(PRIO prio,
+        ConstraintBase(uint32_t prio,
                        T_PARAMS params,
                        CallbackDataMediator& cbdm)
-        : PriorityBase<PRIO>(prio),
+        : priority_(prio),
           constraint_params_(params),
           callback_data_mediator_(cbdm),
           value_(0.0),
@@ -145,8 +123,29 @@ class ConstraintBase : public PriorityBase<PRIO>
             this->member_inst_cnt_ = instance_ctr_++;
         }
 
-        virtual ~ConstraintBase()
-        {}
+        virtual ~ConstraintBase() {}
+
+        virtual std::string getTaskId() const = 0;
+        virtual ConstraintTypes getType() const = 0;
+        virtual double getCriticalValue() const { return 0.0; }
+
+        inline void setPriority(uint32_t prio) { this->priority_ = prio;}
+        inline uint32_t getPriority() const { return priority_; }
+        inline double getPriorityAsNum() const { return static_cast<double>(priority_); }
+
+        virtual ConstraintState getState() const { return this->state_; }
+        virtual Eigen::MatrixXd getTaskJacobian() const { return Eigen::MatrixXd::Zero(1, 1); }
+        virtual Eigen::VectorXd getTaskDerivatives() const { return Eigen::VectorXd::Zero(1, 1); }
+
+        virtual double getValue() const { return this->value_; }
+        virtual double getDerivativeValue() const { return this->derivative_value_; }
+        virtual Eigen::VectorXd getPartialValues() const { return this->partial_values_; }
+        virtual double getPredictionValue() const { return this->prediction_value_; }
+
+        virtual void calculate() = 0;
+        virtual double getActivationGain() const = 0;
+        virtual double getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution,
+                                              const Eigen::MatrixXd& homogeneous_solution) const = 0;
 
         virtual Task_t createTask()
         {
@@ -156,23 +155,6 @@ class ConstraintBase : public PriorityBase<PRIO>
                         this->getTaskDerivatives(),
                         this->getType());
             return task;
-        }
-
-        virtual std::string getTaskId() const = 0;
-
-        virtual ConstraintState getState() const
-        {
-            return this->state_;
-        }
-
-        virtual Eigen::MatrixXd getTaskJacobian() const
-        {
-            return Eigen::MatrixXd::Zero(1, 1);
-        }
-
-        virtual Eigen::VectorXd getTaskDerivatives() const
-        {
-            return Eigen::VectorXd::Zero(1, 1);
         }
 
         virtual void update(const JointStates& joint_states, const KDL::JntArrayVel& joints_prediction, const Matrix6Xd_t& jacobian_data)
@@ -188,33 +170,8 @@ class ConstraintBase : public PriorityBase<PRIO>
             this->calculate();
         }
 
-        virtual void calculate() = 0;
-
-        virtual double getValue() const
-        {
-            return this->value_;
-        }
-
-        virtual double getDerivativeValue() const
-        {
-            return this->derivative_value_;
-        }
-
-        virtual Eigen::VectorXd getPartialValues() const
-        {
-            return this->partial_values_;
-        }
-
-        virtual double getPredictionValue() const
-        {
-            return this->prediction_value_;
-        }
-
-        virtual double getActivationGain() const = 0;
-        virtual double getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution,
-                                              const Eigen::MatrixXd& homogeneous_solution) const = 0;
-
     protected:
+        uint32_t priority_;
         ConstraintState state_;
         T_PARAMS constraint_params_;
         CallbackDataMediator& callback_data_mediator_;
@@ -233,13 +190,6 @@ class ConstraintBase : public PriorityBase<PRIO>
 
         uint32_t member_inst_cnt_;
         static uint32_t instance_ctr_;
-
-        virtual ConstraintTypes getType() const = 0;
-
-        virtual double getCriticalValue() const
-        {
-            return 0.0;
-        }
 
         /**
          * Copy the parameters and adapt them for the task damping.
@@ -261,9 +211,10 @@ class ConstraintBase : public PriorityBase<PRIO>
         }
 };
 
-template <typename T_PARAMS, typename PRIO>
-uint32_t ConstraintBase<T_PARAMS, PRIO>::instance_ctr_ = 0;
+template <typename T_PARAMS>
+uint32_t ConstraintBase<T_PARAMS>::instance_ctr_ = 0;
 
-typedef boost::shared_ptr<PriorityBase<uint32_t> > ConstraintBase_t;
+template <typename T_PARAMS = ConstraintParamsBase>
+using ConstraintBase_t = boost::shared_ptr<ConstraintBase<T_PARAMS> >;
 
 #endif  // COB_TWIST_CONTROLLER_CONSTRAINTS_CONSTRAINT_BASE_H

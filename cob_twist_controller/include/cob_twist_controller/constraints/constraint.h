@@ -65,7 +65,6 @@ class ConstraintParamFactory
 
 /* BEGIN ConstraintsBuilder *************************************************************************************/
 /// Class providing a static method to create constraints.
-template <typename PRIO = uint32_t>
 class ConstraintsBuilder
 {
     public:
@@ -83,16 +82,16 @@ class ConstraintsBuilder
 
 /* BEGIN CollisionAvoidance *************************************************************************************/
 /// Class providing methods that realize a CollisionAvoidance constraint.
-template <typename T_PARAMS, typename PRIO = uint32_t>
-class CollisionAvoidance : public ConstraintBase<T_PARAMS, PRIO>
+template <typename T_PARAMS>
+class CollisionAvoidance : public ConstraintBase<T_PARAMS>
 {
     public:
-        CollisionAvoidance(PRIO prio,
+        CollisionAvoidance(u_int32_t prio,
                            T_PARAMS constraint_params,
                            CallbackDataMediator& cbdm,
                            KDL::ChainJntToJacSolver& jnt_to_jac,
                            KDL::ChainFkSolverVel_recursive& fk_solver_vel) :
-            ConstraintBase<T_PARAMS, PRIO>(prio, constraint_params, cbdm),
+            ConstraintBase<T_PARAMS>(prio, constraint_params, cbdm),
             jnt_to_jac_(jnt_to_jac),
             fk_solver_vel_(fk_solver_vel)
         {}
@@ -135,14 +134,14 @@ class CollisionAvoidance : public ConstraintBase<T_PARAMS, PRIO>
 
 /* BEGIN JointLimitAvoidance ************************************************************************************/
 /// Class providing methods that realize a JointLimitAvoidance constraint.
-template <typename T_PARAMS, typename PRIO = uint32_t>
-class JointLimitAvoidance : public ConstraintBase<T_PARAMS, PRIO>
+template <typename T_PARAMS>
+class JointLimitAvoidance : public ConstraintBase<T_PARAMS>
 {
     public:
-        JointLimitAvoidance(PRIO prio,
+        JointLimitAvoidance(u_int32_t prio,
                             T_PARAMS constraint_params,
                             CallbackDataMediator& cbdm)
-            : ConstraintBase<T_PARAMS, PRIO>(prio, constraint_params, cbdm),
+            : ConstraintBase<T_PARAMS>(prio, constraint_params, cbdm),
               abs_delta_max_(std::numeric_limits<double>::max()),
               abs_delta_min_(std::numeric_limits<double>::max()),  // max. delta away from min
               rel_max_(1.0),    // 100% rel. range to max limit
@@ -178,14 +177,14 @@ class JointLimitAvoidance : public ConstraintBase<T_PARAMS, PRIO>
 
 /* BEGIN JointLimitAvoidanceMid *********************************************************************************/
 /// Class providing methods that realize a JointLimitAvoidanceMid constraint.
-template <typename T_PARAMS, typename PRIO = uint32_t>
-class JointLimitAvoidanceMid : public ConstraintBase<T_PARAMS, PRIO>
+template <typename T_PARAMS>
+class JointLimitAvoidanceMid : public ConstraintBase<T_PARAMS>
 {
     public:
-        JointLimitAvoidanceMid(PRIO prio,
+        JointLimitAvoidanceMid(u_int32_t prio,
                                T_PARAMS constraint_params,
                                CallbackDataMediator& cbdm)
-            : ConstraintBase<T_PARAMS, PRIO>(prio, constraint_params, cbdm)
+            : ConstraintBase<T_PARAMS>(prio, constraint_params, cbdm)
         {}
 
         virtual ~JointLimitAvoidanceMid()
@@ -209,14 +208,14 @@ class JointLimitAvoidanceMid : public ConstraintBase<T_PARAMS, PRIO>
 
 /* BEGIN JointLimitAvoidanceIneq ************************************************************************************/
 /// Class providing methods that realize a JointLimitAvoidance constraint based on inequalities.
-template <typename T_PARAMS, typename PRIO = uint32_t>
-class JointLimitAvoidanceIneq : public ConstraintBase<T_PARAMS, PRIO>
+template <typename T_PARAMS>
+class JointLimitAvoidanceIneq : public ConstraintBase<T_PARAMS>
 {
     public:
-        JointLimitAvoidanceIneq(PRIO prio,
+        JointLimitAvoidanceIneq(u_int32_t prio,
                                 T_PARAMS constraint_params,
                                 CallbackDataMediator& cbdm)
-            : ConstraintBase<T_PARAMS, PRIO>(prio, constraint_params, cbdm),
+            : ConstraintBase<T_PARAMS>(prio, constraint_params, cbdm),
               abs_delta_max_(std::numeric_limits<double>::max()),
               abs_delta_min_(std::numeric_limits<double>::max()),
               rel_max_(1.0),
@@ -250,7 +249,7 @@ class JointLimitAvoidanceIneq : public ConstraintBase<T_PARAMS, PRIO>
 };
 /* END JointLimitAvoidanceIneq **************************************************************************************/
 
-typedef ConstraintsBuilder<uint32_t> ConstraintsBuilder_t;
+typedef ConstraintsBuilder ConstraintsBuilder_t;
 
 #include "cob_twist_controller/constraints/constraint_impl.h"   // implementation of templated class
 
