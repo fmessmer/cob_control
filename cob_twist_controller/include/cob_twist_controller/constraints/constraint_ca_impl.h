@@ -59,9 +59,9 @@ Task_t CollisionAvoidance<T_PARAMS, PRIO>::createTask()
                 this->getTaskDerivatives(),
                 this->getType());
 
+    //ToDo: What is this used for?
     task.tcp_ = this->adaptDampingParamsForTask(this->constraint_params_.tc_params_.damping_ca);
     task.db_.reset(DampingBuilder::createDamping(task.tcp_));
-
     return task;
 }
 

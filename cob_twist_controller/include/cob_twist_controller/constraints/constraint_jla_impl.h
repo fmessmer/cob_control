@@ -53,16 +53,14 @@
 template <typename T_PARAMS, typename PRIO>
 Task_t JointLimitAvoidance<T_PARAMS, PRIO>::createTask()
 {
-    Eigen::MatrixXd cost_func_jac = this->getTaskJacobian();
-    Eigen::VectorXd derivs = this->getTaskDerivatives();
     Task_t task(this->getPriority(),
                 this->getTaskId(),
-                cost_func_jac,
-                derivs,
+                this->getTaskJacobian(),
+                this->getTaskDerivatives(),
                 this->getType());
 
     task.tcp_ = this->adaptDampingParamsForTask(this->constraint_params_.tc_params_.damping_jla);
-    task.db_ = boost::shared_ptr<DampingBase>(DampingBuilder::createDamping(task.tcp_));
+    task.db_.reset(DampingBuilder::createDamping(task.tcp_));
     return task;
 }
 
@@ -348,16 +346,14 @@ void JointLimitAvoidanceMid<T_PARAMS, PRIO>::calcPartialValues()
 template <typename T_PARAMS, typename PRIO>
 Task_t JointLimitAvoidanceIneq<T_PARAMS, PRIO>::createTask()
 {
-    Eigen::MatrixXd cost_func_jac = this->getTaskJacobian();
-    Eigen::VectorXd derivs = this->getTaskDerivatives();
     Task_t task(this->getPriority(),
                 this->getTaskId(),
-                cost_func_jac,
-                derivs,
+                this->getTaskJacobian(),
+                this->getTaskDerivatives(),
                 this->getType());
 
     task.tcp_ = this->adaptDampingParamsForTask(this->constraint_params_.tc_params_.damping_jla);
-    task.db_ = boost::shared_ptr<DampingBase>(DampingBuilder::createDamping(task.tcp_));
+    task.db_.reset(DampingBuilder::createDamping(task.tcp_));
     return task;
 }
 
