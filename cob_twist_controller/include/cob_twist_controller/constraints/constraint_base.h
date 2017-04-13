@@ -88,6 +88,7 @@ class PriorityBase
             return static_cast<double>(priority_);
         }
 
+        //ToDo: move abstract functions to ConstraintBase
         virtual Task_t createTask() = 0;
         virtual std::string getTaskId() const = 0;
         virtual ConstraintState getState() const = 0;
@@ -108,6 +109,7 @@ class PriorityBase
     protected:
         PRIO priority_;
 
+        //ToDo: move abstract functions to ConstraintBase
         virtual ConstraintTypes getType() const = 0;
         virtual double getCriticalValue() const = 0;
         virtual TwistControllerParams adaptDampingParamsForTask(double const_damping_factor) = 0;
@@ -145,8 +147,23 @@ class ConstraintBase : public PriorityBase<PRIO>
             this->member_inst_cnt_ = instance_ctr_++;
         }
 
-        virtual ~ConstraintBase()
-        {}
+        virtual ~ConstraintBase() {}
+
+        virtual ConstraintState getState() const { return this->state_; }
+        virtual Eigen::MatrixXd getTaskJacobian() const { return Eigen::MatrixXd::Zero(1, 1); }
+        virtual Eigen::VectorXd getTaskDerivatives() const { return Eigen::VectorXd::Zero(1, 1); }
+
+        virtual double getValue() const { return this->value_; }
+        virtual double getDerivativeValue() const { return this->derivative_value_; }
+        virtual Eigen::VectorXd getPartialValues() const { return this->partial_values_; }
+        virtual double getPredictionValue() const { return this->prediction_value_; }
+
+        virtual std::string getTaskId() const = 0;
+        virtual void calculate() = 0;
+
+        virtual double getActivationGain() const = 0;
+        virtual double getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution,
+                                              const Eigen::MatrixXd& homogeneous_solution) const = 0;
 
         virtual Task_t createTask()
         {
@@ -156,23 +173,6 @@ class ConstraintBase : public PriorityBase<PRIO>
                         this->getTaskDerivatives(),
                         this->getType());
             return task;
-        }
-
-        virtual std::string getTaskId() const = 0;
-
-        virtual ConstraintState getState() const
-        {
-            return this->state_;
-        }
-
-        virtual Eigen::MatrixXd getTaskJacobian() const
-        {
-            return Eigen::MatrixXd::Zero(1, 1);
-        }
-
-        virtual Eigen::VectorXd getTaskDerivatives() const
-        {
-            return Eigen::VectorXd::Zero(1, 1);
         }
 
         virtual void update(const JointStates& joint_states, const KDL::JntArrayVel& joints_prediction, const Matrix6Xd_t& jacobian_data)
@@ -187,32 +187,6 @@ class ConstraintBase : public PriorityBase<PRIO>
             this->callback_data_mediator_.fill(this->constraint_params_);
             this->calculate();
         }
-
-        virtual void calculate() = 0;
-
-        virtual double getValue() const
-        {
-            return this->value_;
-        }
-
-        virtual double getDerivativeValue() const
-        {
-            return this->derivative_value_;
-        }
-
-        virtual Eigen::VectorXd getPartialValues() const
-        {
-            return this->partial_values_;
-        }
-
-        virtual double getPredictionValue() const
-        {
-            return this->prediction_value_;
-        }
-
-        virtual double getActivationGain() const = 0;
-        virtual double getSelfMotionMagnitude(const Eigen::MatrixXd& particular_solution,
-                                              const Eigen::MatrixXd& homogeneous_solution) const = 0;
 
     protected:
         ConstraintState state_;
@@ -235,11 +209,7 @@ class ConstraintBase : public PriorityBase<PRIO>
         static uint32_t instance_ctr_;
 
         virtual ConstraintTypes getType() const = 0;
-
-        virtual double getCriticalValue() const
-        {
-            return 0.0;
-        }
+        virtual double getCriticalValue() const { return 0.0; }
 
         /**
          * Copy the parameters and adapt them for the task damping.
