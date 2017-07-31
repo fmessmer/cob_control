@@ -339,7 +339,6 @@ void CobFrameTracker::publishTwist(ros::Duration period, bool do_publish)
 
     if (do_publish)
     {
-        ROS_INFO_STREAM("[publishTwist] Period: " << period.toSec());
         twist_pub_.publish(twist_msg);
         error_pub_.publish(error_msg);
     }
